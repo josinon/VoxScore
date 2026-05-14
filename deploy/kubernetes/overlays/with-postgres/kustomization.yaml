@@ -1,5 +1,8 @@
 # PostgreSQL dentro do cluster (StatefulSet + PVC) + stack base (API, frontend, Ingress).
 #
+# TLS: o overlay aplica patch no Ingress para cert-manager. O ClusterIssuer é cluster-scoped;
+# aplique-o à parte (não entra no kustomize) para evitar namespace inválido no recurso.
+#
 # Antes de produção: altere as passwords no secretGenerator abaixo e mantenha o mesmo
 # valor em POSTGRES_PASSWORD e na password embutida em DATABASE_URL (URL-encoded se
 # tiver caracteres especiais). Prefira depois migrar para Sealed Secrets / External Secrets.
@@ -19,7 +22,7 @@ secretGenerator:
       disableNameSuffixHash: true
     literals:
       - POSTGRES_USER=voxscore
-      - POSTGRES_PASSWORD=voxscore-in-k8s-change-me
+      - POSTGRES_PASSWORD=voxscoreink8s
       - POSTGRES_DB=voxscore
   - name: voxscore-api
     options:
@@ -34,11 +37,12 @@ secretGenerator:
 
 patches:
   - path: patch-deployment-api.yaml
+  - path: patch-ingress-cert-manager.yaml
 
 images:
-  - name: voxscore/api
-    newName: voxscore/api
-    newTag: latest
-  - name: voxscore/frontend
-    newName: voxscore/frontend
-    newTag: latest
+  - name: josinon/voxscore-api
+    newName: josinon/voxscore-api
+    newTag: "0.0.1"
+  - name: josinon/voxscore-frontend
+    newName: josinon/voxscore-frontend
+    newTag: "0.0.1"

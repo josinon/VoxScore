@@ -19,7 +19,7 @@ spec:
         fsGroup: 1001
       containers:
         - name: migrate
-          image: voxscore/api:latest
+          image: josinon/voxscore-api:latest
           imagePullPolicy: IfNotPresent
           workingDir: /app
           command: ['npm', 'run', 'migration:run:prod']

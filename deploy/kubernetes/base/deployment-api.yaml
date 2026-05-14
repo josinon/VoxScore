@@ -20,7 +20,7 @@ spec:
         fsGroup: 1001
       containers:
         - name: api
-          image: voxscore/api:latest
+          image: josinon/voxscore-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

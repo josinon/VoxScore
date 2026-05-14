@@ -74,7 +74,7 @@ flowchart TB
 | [`frontend/Dockerfile`](../../frontend/Dockerfile) | Build Vite + nginx com `try_files` para SPA. |
 | [`base/`](./base/) | Namespace `voxscore`, ConfigMap da API, Deployments, Services, Ingress (host de exemplo). |
 | [`base/job-migrate.yaml`](./base/job-migrate.yaml) | **Job** de migrações TypeORM — aplicar manualmente (não está no `kustomization` por defeito, para evitar conflitos em `kubectl apply` repetidos). |
-| [`overlays/with-postgres/`](./overlays/with-postgres/) | Postgres in-cluster com Secrets (`postgres-credentials` + `voxscore-api`), PVC 10 Gi, initContainer na API; alinhado ao `base` (2 réplicas, migrações via Job). |
+| [`overlays/with-postgres/`](./overlays/with-postgres/) | Postgres in-cluster com Secrets (`postgres-credentials` + `voxscore-api`), PVC 10 Gi, initContainer na API; alinhado ao `base` (2 réplicas, migrações via Job). TLS: patch Ingress + [`clusterissuer-letsencrypt-prod.yaml`](./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml) (apply manual). |
 | [`overlays/local/`](./overlays/local/) | Postgres in-cluster para demo, secret de demonstração, `AUTH_GOOGLE_MOCK_ENABLED=true`, Ingress em `voxscore.local`. |
 
 ### Overlay `with-postgres` — PostgreSQL dentro do Kubernetes
@@ -94,6 +94,39 @@ Requisitos: **StorageClass** por defeito para o PVC do Postgres; imagens `voxsco
 **Credenciais:** em [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml), o valor de `POSTGRES_PASSWORD` no Secret `postgres-credentials` tem de coincidir com a password na URL `DATABASE_URL` do Secret `voxscore-api`. Se a password tiver caracteres reservados na URL, use [encoding na connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
 
 Ajuste **ConfigMap** `voxscore-api-config` (`CORS_ORIGINS`), **Ingress** (host, TLS) e literais OAuth/Google no `secretGenerator` (ou migre para Sealed Secrets / External Secrets).
+
+### TLS com cert-manager + Let’s Encrypt (k3s / Traefik)
+
+O overlay `with-postgres` inclui um **patch** ao Ingress (`patch-ingress-cert-manager.yaml`) que adiciona `spec.tls` e a anotação `cert-manager.io/cluster-issuer: letsencrypt-prod`. O cert-manager cria o Secret `voxscore-tls` e renova o certificado automaticamente (desafio **HTTP-01**: o tráfego na **porta 80** tem de chegar ao Traefik com os mesmos hostnames do Ingress).
+
+**1. Instalar o cert-manager** (uma vez por cluster; veja a [documentação oficial](https://cert-manager.io/docs/installation/) para a versão atual):
+
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.5/cert-manager.yaml
+kubectl -n cert-manager wait --for=condition=available deployment --all --timeout=180s
+```
+
+**2. ClusterIssuer** — edite o email em [`overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml`](./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml) (`spec.acme.email`). O ficheiro **não** deve ser incluído no `kustomization` do overlay (recurso cluster-scoped; o `namespace:` do Kustomize quebraria o apply). Aplique-o **à parte**:
+
+```bash
+kubectl apply -f ./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml
+```
+
+**3. Stack VoxScore** (Ingress com TLS e anotação cert-manager):
+
+```bash
+kubectl apply -k ./overlays/with-postgres
+```
+
+**4. Verificar** o pedido de certificado e o Secret:
+
+```bash
+kubectl -n voxscore describe certificate
+kubectl -n voxscore get secret voxscore-tls
+kubectl get clusterissuer letsencrypt-prod
+```
+
+Para testes sem limite de taxa da AC de produção, crie um `ClusterIssuer` à parte com o endpoint **staging** do Let’s Encrypt e use `cert-manager.io/cluster-issuer` com esse nome no patch (ou duplique o patch num overlay de staging).
 
 ## Variáveis e segredos
 
@@ -309,6 +342,47 @@ echo "$(minikube ip 2>/dev/null || kubectl get svc -n ingress-nginx ingress-ngin
 ```
 
 Abra **http://voxscore.local** (em minikube o Ingress costuma servir HTTP na porta 80; em produção configure TLS no Ingress). Login com **OAuth mock** está ativo (`AUTH_GOOGLE_MOCK_ENABLED=true`).
+
+## Como aceder à aplicação após o deploy
+
+Os **Services** da API e do frontend são **ClusterIP**: só são alcançáveis **dentro** do cluster. Para abrir a app no browser, precisa de um **ponto de entrada externo**. Neste repositório isso é feito com um recurso **Ingress** (`ingressClassName: nginx`).
+
+### 1. Confirmar que o Ingress existe e tem endereço
+
+```bash
+kubectl -n voxscore get ingress
+kubectl -n voxscore describe ingress voxscore
+```
+
+Na coluna **ADDRESS** (ou em `describe`, secção `Status`) aparece o IP ou o hostname do **controlador Ingress** (ex.: IP do `LoadBalancer` do serviço `ingress-nginx-controller`, ou o IP do nó em minikube). Enquanto estiver vazio, o tráfego externo ainda não está pronto: espere o provisionamento ou verifique se o addon/controller NGINX está instalado.
+
+### 2. Alinhar o nome que escreve no browser com o `host` do Ingress
+
+No **base**, o manifesto usa o host **`voxscore.example.com`**. Tem de abrir o browser **exactamente** com esse hostname (ou o que tiver editado no Ingress), na porta **80** (HTTP) ou **443** (HTTPS), conforme configurar TLS.
+
+- **DNS real:** crie um registo `A` (ou `CNAME`) para o endereço do Ingress com o hostname que usou no manifesto.
+- **Teste local sem DNS:** no seu PC, mapeie o IP do Ingress para esse hostname no ficheiro hosts (Linux/macOS: `/etc/hosts`):
+
+  ```text
+  IP_DO_INGRESS   voxscore.example.com
+  ```
+
+  No overlay **local**, o host é **`voxscore.local`**; o README da secção 3 mostra um comando para acrescentar a linha com o IP (minikube ou serviço do NGINX).
+
+### 3. Abrir a aplicação
+
+- **HTTP (comum em testes):** `http://voxscore.example.com` (ou `http://voxscore.local` no overlay local).
+- **HTTPS:** configure um certificado no Ingress (ex.: cert-manager + Let’s Encrypt) e use `https://...`.
+
+O Ingress encaminha **`/`** para o **frontend** (nginx) e **`/api`** para a **API**; a SPA usa caminhos relativos `/api/v1`, por isso **deve** ser o mesmo host na barra de endereços.
+
+### 4. CORS e erros no browser
+
+Se a página carregar mas os pedidos à API falharem por CORS, o **ConfigMap** `voxscore-api-config` tem de ter **`CORS_ORIGINS`** com a **origem exata** que usa no browser (ex.: `https://voxscore.example.com` ou `http://voxscore.local`), incluindo esquema (`http` vs `https`).
+
+### 5. Sem Ingress (só depuração)
+
+O desenho normal da app pressupõe **Ingress**. Sem ele, `kubectl port-forward` só para um Service **não** reproduz sozinho o encaminhamento `/` + `/api` no mesmo host; para primeira experiência, instale o **Ingress NGINX** no cluster e use os passos acima.
 
 ## Health checks (API)
 

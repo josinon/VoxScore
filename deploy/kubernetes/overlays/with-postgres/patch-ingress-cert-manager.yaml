@@ -1,0 +1,13 @@
+# TLS gerido pelo cert-manager (Secret voxscore-tls). HTTP-01 exige porta 80 no Traefik.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: voxscore
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - votacao-magadance.lab6.cloud
+        - api-magadance.lab6.cloud
+      secretName: voxscore-tls

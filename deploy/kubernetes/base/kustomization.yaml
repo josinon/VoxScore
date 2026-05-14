@@ -16,9 +16,9 @@ commonLabels:
   app.kubernetes.io/part-of: voxscore
 
 images:
-  - name: voxscore/api
-    newName: voxscore/api
+  - name: josinon/voxscore-api
+    newName: josinon/voxscore-api
     newTag: latest
-  - name: voxscore/frontend
-    newName: voxscore/frontend
+  - name: josinon/voxscore-frontend
+    newName: josinon/voxscore-frontend
     newTag: latest

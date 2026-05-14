@@ -1,16 +1,19 @@
+# k3s (e muitos clusters) vêm com Traefik, não com NGINX Ingress.
+# Confirme: `kubectl get ingressclass` — o `spec.ingressClassName` tem de coincidir.
+#
+# Híbrido:
+# - Host da votação: `/api` → API, `/` → SPA (URLs relativas `/api/v1`).
+# - Host api-*: tudo para a API (SPA com VITE_API_BASE_URL nesse host).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: voxscore
   labels:
     app.kubernetes.io/name: voxscore
-  annotations:
-    nginx.ingress.kubernetes.io/proxy-read-timeout: '3600'
-    nginx.ingress.kubernetes.io/proxy-send-timeout: '3600'
 spec:
-  ingressClassName: nginx
+  ingressClassName: traefik
   rules:
-    - host: voxscore.example.com
+    - host: votacao-magadance.lab6.cloud
       http:
         paths:
           - path: /api
@@ -27,3 +30,13 @@ spec:
                 name: voxscore-frontend
                 port:
                   number: 80
+    - host: api-magadance.lab6.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: voxscore-api
+                port:
+                  number: 3000

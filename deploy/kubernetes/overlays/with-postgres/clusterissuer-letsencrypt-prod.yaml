@@ -1,0 +1,22 @@
+# Cluster-scoped: NÃO incluir no `kustomization.yaml` do overlay (o `namespace:` do Kustomize
+# injetaria metadata.namespace neste recurso e o apply falhava).
+#
+# Pré-requisito: cert-manager instalado no cluster.
+# 1) Edite o email em `spec.acme.email` (avisos Let's Encrypt).
+# 2) kubectl apply -f deploy/kubernetes/overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml
+#
+# O solver HTTP-01 usa a IngressClass `traefik` (k3s por defeito). Ajuste se o teu cluster for diferente.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: josinon.dev@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik

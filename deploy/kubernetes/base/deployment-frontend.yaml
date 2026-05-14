@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: voxscore/frontend:latest
+          image: josinon/voxscore-frontend:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
