@@ -84,7 +84,7 @@ Use quando quiser **PostgreSQL a correr no próprio cluster** (homologação ou 
 ```bash
 kubectl apply -k ./overlays/with-postgres
 kubectl -n voxscore delete job voxscore-migrate --ignore-not-found
-kubectl -n voxscore apply -f ./base/job-migrate.yaml
+sed "s|voxscore/api:latest|SEU_REGISTRY/voxscore-api:TAG|g" ./base/job-migrate.yaml | kubectl -n voxscore apply -f -
 kubectl -n voxscore wait --for=condition=complete job/voxscore-migrate --timeout=300s
 kubectl -n voxscore rollout restart deployment/voxscore-api
 ```
@@ -118,6 +118,54 @@ flowchart TB
   CM -->|envFrom| C1
   SEC -->|envFrom| C1
 ```
+
+## Deploy inicial — frontend, backend e PostgreSQL no cluster
+
+Use quando tiver um cluster Kubernetes e quiser a **primeira instalação** da aplicação com **base de dados incluída** no próprio cluster. O caminho recomendado é o overlay **[`overlays/with-postgres/`](./overlays/with-postgres/)** (API + frontend do `base` + Postgres com PVC).
+
+### Pré-requisitos
+
+- `kubectl` apontando para o cluster.
+- **StorageClass** por defeito (para o PVC do Postgres).
+- **Ingress** (ex.: NGINX) se quiser aceder à app por hostname; sem Ingress pode usar `kubectl port-forward` aos Services.
+- Imagens da API e do frontend **acessíveis pelo cluster** (registry com pull permitido ou imagens pré-carregadas).
+
+### Sequência de comandos (primeira vez)
+
+Trabalhe a partir do diretório `deploy/kubernetes`. Substitua `SEU_REGISTRY`, `TAG` e os URLs de OAuth pelo vosso ambiente.
+
+```bash
+cd deploy/kubernetes
+
+# 1) Imagens
+docker build -t SEU_REGISTRY/voxscore-api:TAG ../../backend
+docker build -t SEU_REGISTRY/voxscore-frontend:TAG ../../frontend
+docker push SEU_REGISTRY/voxscore-api:TAG
+docker push SEU_REGISTRY/voxscore-frontend:TAG
+```
+
+Edite [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml): bloco `images:` (`newName` / `newTag`) e, no `secretGenerator`, **alinhe** `POSTGRES_PASSWORD` com a password dentro de `DATABASE_URL`; defina `JWT_SECRET` forte e URLs reais em `GOOGLE_CALLBACK_URL` e `OAUTH_FRONTEND_REDIRECT_URL` se usar OAuth Google.
+
+Depois:
+
+```bash
+# 2) Aplicar stack (namespace voxscore, Postgres, API, frontend, Ingress, Secrets)
+kubectl apply -k ./overlays/with-postgres
+
+# 3) Migrações (TYPEORM_MIGRATIONS_RUN=false no base)
+kubectl -n voxscore delete job voxscore-migrate --ignore-not-found
+sed "s|voxscore/api:latest|SEU_REGISTRY/voxscore-api:TAG|g" ./base/job-migrate.yaml | kubectl -n voxscore apply -f -
+kubectl -n voxscore wait --for=condition=complete job/voxscore-migrate --timeout=300s
+
+# 4) Garantir que a API arranca limpo após o schema existir
+kubectl -n voxscore rollout restart deployment/voxscore-api
+kubectl -n voxscore rollout status deployment/voxscore-api
+kubectl -n voxscore rollout status deployment/voxscore-frontend
+```
+
+**5)** Ajuste o **ConfigMap** `voxscore-api-config` no namespace `voxscore` (sobretudo `CORS_ORIGINS` com a URL pública do Ingress) e o **Ingress** (`host` `voxscore.example.com` no manifesto base, TLS se necessário): `kubectl -n voxscore edit configmap voxscore-api-config` e `kubectl -n voxscore edit ingress voxscore`.
+
+**Alternativa mais rápida (só desenvolvimento):** [`overlays/local/`](./overlays/local/) — Postgres + mock OAuth + Ingress `voxscore.local`; um único `kubectl apply -k ./overlays/local` e entrada em `/etc/hosts` (ver secção 3 mais abaixo).
 
 ## 1. Construir e publicar imagens
 
@@ -201,11 +249,11 @@ flowchart TD
 
    ```bash
    kubectl -n voxscore delete job voxscore-migrate --ignore-not-found
-   kubectl -n voxscore apply -f ./base/job-migrate.yaml
+   sed "s|voxscore/api:latest|SEU_REGISTRY/voxscore-api:TAG|g" ./base/job-migrate.yaml | kubectl -n voxscore apply -f -
    kubectl -n voxscore wait --for=condition=complete job/voxscore-migrate --timeout=300s
    ```
 
-   O Job usa a mesma imagem da API e `npm run migration:run:prod` (TypeORM com `dist/database/data-source.js`).
+   O Job usa a mesma imagem da API e `npm run migration:run:prod` (TypeORM com `dist/database/data-source.js`). O ficheiro do Job traz `voxscore/api:latest` por defeito: substitua pela **mesma** imagem/tag do Deployment (exemplo com `sed` acima).
 
    ```mermaid
    flowchart LR
