@@ -13,4 +13,4 @@ data:
   BOOTSTRAP_ADMIN_EMAIL: admin@example.com
   BOOTSTRAP_ADMIN_DISPLAY_NAME: Administrator
   # Alinhar com o URL público do Ingress do frontend (mesmo host que `/` ou host dedicado).
-  CORS_ORIGINS: https://votacao-megadance.lab6.cloud
+  CORS_ORIGINS: https://megadance.lab6.cloud

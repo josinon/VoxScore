@@ -32,8 +32,8 @@ secretGenerator:
       - JWT_SECRET=k8s-with-postgres-change-me-use-at-least-32-chars
       - GOOGLE_CLIENT_ID=configure-or-use-mock-in-configmap
       - GOOGLE_CLIENT_SECRET=configure-or-use-mock-in-configmap
-      - GOOGLE_CALLBACK_URL=https://voxscore.example.com/api/v1/auth/google/callback
-      - OAUTH_FRONTEND_REDIRECT_URL=https://voxscore.example.com/oauth/callback
+      - GOOGLE_CALLBACK_URL=https://megadance.lab6.cloud/api/v1/auth/google/callback
+      - OAUTH_FRONTEND_REDIRECT_URL=https://megadance.lab6.cloud/oauth/callback
 
 patches:
   - path: patch-deployment-api.yaml

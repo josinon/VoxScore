@@ -8,6 +8,6 @@ metadata:
 spec:
   tls:
     - hosts:
-        - votacao-magadance.lab6.cloud
+        - megadance.lab6.cloud
         - api-magadance.lab6.cloud
       secretName: voxscore-tls

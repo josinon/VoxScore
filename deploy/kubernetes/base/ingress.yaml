@@ -2,7 +2,7 @@
 # Confirme: `kubectl get ingressclass` — o `spec.ingressClassName` tem de coincidir.
 #
 # Híbrido:
-# - Host da votação: `/api` → API, `/` → SPA (URLs relativas `/api/v1`).
+# - Host da SPA: `/api` → API, `/` → SPA (URLs relativas `/api/v1`).
 # - Host api-*: tudo para a API (SPA com VITE_API_BASE_URL nesse host).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -13,7 +13,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: votacao-magadance.lab6.cloud
+    - host: megadance.lab6.cloud
       http:
         paths:
           - path: /api
