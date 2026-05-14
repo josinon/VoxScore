@@ -6,11 +6,13 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
+import { authThrottle } from '../common/throttle/throttle-env';
 import { DevTokenDto } from './dto/dev-token.dto';
 
 /**
@@ -18,6 +20,7 @@ import { DevTokenDto } from './dto/dev-token.dto';
  * Ativar só em desenvolvimento/CI com `AUTH_DEV_TOKEN_ENABLED=true`.
  * Será substituído pelo fluxo OAuth (Fase 3) para novos ambientes; o mock `POST /auth/oauth/mock` cobre testes sem Google.
  */
+@Throttle(authThrottle)
 @Controller('auth')
 export class AuthDevController {
   constructor(

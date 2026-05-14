@@ -287,14 +287,14 @@ Sistema **pronto para demonstração** ou deploy inicial: rate limit nas rotas s
 
 | ID | Descrição | Tipo |
 |----|-----------|------|
-| T10.1 | Smoke: login → `users/me` → listar candidatos → (como admin) abrir votação → (como público) votar → ranking atualizado. | Script e2e ou checklist manual único |
-| T10.2 | Build `pnpm build` / `npm run build` (frontend + backend) sem erro. | CI |
-| T10.3 | Tentativas repetidas de voto (abuse) respeitam rate limit **429** após limiar. | e2e ou carga leve |
+| T10.1 | Smoke: login → `users/me` → listar candidatos → (como admin) abrir votação → (como público) votar → ranking atualizado. | e2e [`frontend/e2e/smoke.spec.ts`](./frontend/e2e/smoke.spec.ts) |
+| T10.2 | Build `pnpm build` / `npm run build` (frontend + backend) sem erro. | CI ([`.github/workflows/backend-ci.yml`](./.github/workflows/backend-ci.yml), [`.github/workflows/frontend-ci.yml`](./.github/workflows/frontend-ci.yml)) |
+| T10.3 | Tentativas repetidas de voto (abuse) respeitam rate limit **429** após limiar. | e2e [`backend/test/voting-rate-limit.e2e-spec.ts`](./backend/test/voting-rate-limit.e2e-spec.ts) |
 
 ### Definition of done
 
-- [ ] T10.1–T10.3 verdes.
-- [ ] Stakeholder consegue reproduzir o demo seguindo apenas o README.
+- [x] T10.1–T10.3 verdes.
+- [x] Stakeholder consegue reproduzir o demo seguindo apenas o README.
 
 ---
 

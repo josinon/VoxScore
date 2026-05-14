@@ -18,6 +18,7 @@ Este documento alinha **backend** (NestJS) e **frontend** (SPA Vite/React) ao am
 | `TYPEORM_MIGRATIONS_RUN` | **ConfigMap** / env | Use **`false`** nas réplicas da API e execute migrações num **Job** antes do rollout; evita corridas com vários Pods. |
 | Segredo JWT / OAuth | **Secret** (API) | Nunca em ConfigMap nem na imagem. |
 | Origens CORS | **ConfigMap** ou env da API | Deve coincidir com a URL **pública** do Ingress do frontend (`https://app.exemplo.com`). |
+| `THROTTLE_*` (opcional) | **ConfigMap** | Limites de `POST .../votes` e auth; ver [`backend/.env.example`](../backend/.env.example). |
 | URL da API no browser | **Build-time** (`VITE_*` ou similar) | O bundle do React embute a base URL; o pipeline de CI/CD do frontend deve injetar a URL pública da API **por ambiente** (staging/produção). |
 
 ## Health checks (API)

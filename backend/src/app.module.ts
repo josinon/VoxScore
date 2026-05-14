@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InitialSchema1736820000000 } from './database/migrations/1736820000000-InitialSchema';
 import { Candidate } from './entities/candidate.entity';
@@ -11,10 +13,18 @@ import { CandidatesModule } from './candidates/candidates.module';
 import { VotingModule } from './voting/voting.module';
 import { RankingModule } from './ranking/ranking.module';
 import { RealtimeModule } from './realtime/realtime.module';
+import { HttpRequestLoggerInterceptor } from './common/logging/http-request-logger.interceptor';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 2000,
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => {
@@ -46,6 +56,10 @@ import { RealtimeModule } from './realtime/realtime.module';
     VotingModule,
     RankingModule,
     RealtimeModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: HttpRequestLoggerInterceptor },
   ],
 })
 export class AppModule {}

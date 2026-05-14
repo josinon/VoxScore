@@ -11,6 +11,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiConflictResponse,
@@ -31,6 +32,7 @@ import { UserRole } from '../common/user-role.enum';
 import { SetVotingDto } from './dto/set-voting.dto';
 import { SubmitVoteDto } from './dto/submit-vote.dto';
 import { VoteResponseDto } from './dto/vote-response.dto';
+import { votesThrottle } from '../common/throttle/throttle-env';
 import { VotingService } from './voting.service';
 
 type JwtUser = { userId: string; role: string };
@@ -47,6 +49,7 @@ export class VotingController {
   ) {}
 
   @Post(':id/votes')
+  @Throttle(votesThrottle)
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submeter voto (PUBLIC / JUDGE)' })
   @ApiCreatedResponse({ type: VoteResponseDto })

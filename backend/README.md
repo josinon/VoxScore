@@ -69,6 +69,15 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 - **`CORS_ORIGINS`**: lista separada por vírgulas (ex.: `http://localhost:5173,http://127.0.0.1:5173`). Com valor definido, a API usa `credentials: true` e origem restrita a esses hosts. **Sem** variável, aplica-se política permissiva típica de desenvolvimento (ajustar antes de produção).
 
+### Rate limit e logs (Fase 10)
+
+- **`THROTTLE_VOTES_LIMIT`** / **`THROTTLE_VOTES_TTL_MS`** — limite por IP para **`POST /api/v1/candidates/:id/votes`** (predefinições: `30` pedidos por `60000` ms).
+- **`THROTTLE_AUTH_LIMIT`** / **`THROTTLE_AUTH_TTL_MS`** — idem para **`POST /api/v1/auth/dev/token`** e **`POST /api/v1/auth/oauth/mock`** (predefinições: `40` / `60000` ms). Os fluxos **`GET /auth/google`** e callback **não** contam para este limite.
+- **`GET /api/v1/health`** não é limitado (readiness/liveness).
+- Ultrapassado o limite, a API responde **429 Too Many Requests** (cabeçalhos `X-RateLimit-*` quando aplicável).
+- **Logs HTTP**: uma linha JSON por pedido concluído (`msg: "http_request"`, `method`, `path`, `status`, `durationMs`) para agregação mínima em stdout.
+- Atrás de proxy/Ingress, **`trust proxy`** está ativo no Express (1 hop) para o tracker de rate limit usar o IP do cliente.
+
 ### Rotas protegidas
 
 - **`GET /api/v1/users/me`** — `Authorization: Bearer <JWT>`.
@@ -150,7 +159,7 @@ npm run start:dev
 - Prefixo global: **`/api/v1`**
 - Health (readiness com ping ao Postgres): **`GET /api/v1/health`** — responde **200** com `status: "ok"` e `info.database.status: "up"` quando o banco está acessível.
 
-Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/health`** como readiness/liveness após o Postgres estar pronto. Guia de cluster: [`deploy/kubernetes/README.md`](../deploy/kubernetes/README.md).
+Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/health`** como readiness/liveness após o Postgres estar pronto. Guia de cluster: [`deploy/kubernetes/README.md`](../deploy/kubernetes/README.md). Em produção, coloque a API atrás de um proxy com cabeçalhos de cliente (`X-Forwarded-For`) para o rate limit refletir o IP real.
 
 ## Testes (Fases 1 e 2)
 
@@ -158,7 +167,7 @@ Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/hea
 |--------|-----------|
 | `npm run test` | Testes unitários (Jest), incl. **T6.1–T6.2** (`ranking-formula.spec.ts`) |
 | `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
-| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)**, **T6.3 (ranking)** — exige `DATABASE_URL`, migrações e env conforme CI |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)**, **T6.3 (ranking)**, **T10.3 (rate limit em votos)** — exige `DATABASE_URL`, migrações e env conforme CI |
 
 Ordem sugerida com base de dados vazia:
 
@@ -172,4 +181,4 @@ Sem `DATABASE_URL`, os testes de integração e e2e são **ignorados** (`describ
 
 ## CI
 
-O workflow [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml) executa `migration:run`, testes e `build` contra PostgreSQL em serviço.
+O workflow [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml) executa `migration:run`, testes e `build` contra PostgreSQL em serviço. O workflow [`.github/workflows/frontend-ci.yml`](../.github/workflows/frontend-ci.yml) executa `npm ci` e `npm run build` no diretório `frontend/`.
