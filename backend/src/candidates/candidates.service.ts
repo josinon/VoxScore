@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserRole } from '../common/user-role.enum';
 import { Candidate } from '../entities/candidate.entity';
+import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import { CandidateResponseDto } from './dto/candidate-response.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
@@ -12,6 +13,7 @@ export class CandidatesService {
   constructor(
     @InjectRepository(Candidate)
     private readonly candidates: Repository<Candidate>,
+    private readonly realtime: RealtimeHubService,
   ) {}
 
   toResponse(c: Candidate): CandidateResponseDto {
@@ -69,6 +71,7 @@ export class CandidatesService {
       active: dto.active ?? true,
     });
     const saved = await this.candidates.save(entity);
+    this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }
 
@@ -82,6 +85,7 @@ export class CandidatesService {
     }
     this.candidates.merge(found, dto);
     const saved = await this.candidates.save(found);
+    this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }
 
@@ -90,6 +94,7 @@ export class CandidatesService {
     if (res.affected === 0) {
       throw new NotFoundException('Candidate not found');
     }
+    this.realtime.broadcastCandidatesChanged();
   }
 
   /** Abre ou fecha a votação para um candidato. */
@@ -100,6 +105,7 @@ export class CandidatesService {
     }
     found.votingOpen = open;
     const saved = await this.candidates.save(found);
+    this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }
 }

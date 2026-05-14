@@ -4,6 +4,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
+import { configureNestWs } from './configure-nest-ws';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 
@@ -19,6 +20,7 @@ describeOrSkip('Users / auth (e2e) — Fase 2 (T2.2, T2.3)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureNestWs(app);
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(
       new ValidationPipe({

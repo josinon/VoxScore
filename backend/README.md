@@ -106,6 +106,13 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 - **Fórmula** (alinhada ao [README do produto](../README.md) §5): para cada votante, calcula-se a **média dos critérios** desse voto (4 ou 5 notas); depois a **média dessas médias** por grupo (**jurados** / **público**). Com **os dois grupos** com votos: `finalScore = 0.6 * média_jurados + 0.4 * média_público`. Com **só um grupo**: `finalScore` é a média desse grupo (o outro não entra como zero). **Sem votos**: `finalScore = 0`. Implementação e constantes: [`src/ranking/ranking-formula.ts`](./src/ranking/ranking-formula.ts).
 - Cada entrada inclui médias por critério (`judgeCriteriaAverages` / `publicCriteriaAverages`) quando existirem votos nesse grupo, e `judgeCompositeAverage` / `publicCompositeAverage` (média das médias por voto). Valores numéricos arredondados a **4 casas decimais** no servidor.
 
+### Tempo real (WebSocket)
+
+- **`GET ws://<host>/api/v1/ws?token=<JWT>`** (ou `wss://` em HTTPS) — ligação **WebSocket** autenticada com o **mesmo JWT** que o REST (`token` na query; o browser não envia cabeçalhos custom na mão inicial).
+- Mensagens JSON push (ex.: `{ "type": "candidates_changed" }`, `{ "type": "ranking_changed" }`) após alterações a candidatos (CRUD / `votingOpen`) ou após novo voto. O cliente deve refazer **`GET /candidates`** / **`GET /ranking`** conforme o evento.
+- Implementação: [`src/realtime/`](./src/realtime/) (`WsAdapter` em [`main.ts`](./src/main.ts)).
+- Testes: unitários [`src/realtime/realtime-hub.service.spec.ts`](./src/realtime/realtime-hub.service.spec.ts), [`src/realtime/realtime.gateway.spec.ts`](./src/realtime/realtime.gateway.spec.ts); e2e [`test/realtime.e2e-spec.ts`](./test/realtime.e2e-spec.ts) (com `DATABASE_URL`).
+
 ### Documentação OpenAPI
 
 - Se **`SWAGGER_ENABLED`** não for `false`, a UI Swagger fica em **`http://localhost:<PORT>/api/v1/docs`** (botão **Authorize** para JWT Bearer).

@@ -11,6 +11,7 @@ import { UserRole } from '../common/user-role.enum';
 import { Candidate } from '../entities/candidate.entity';
 import { User } from '../entities/user.entity';
 import { Vote } from '../entities/vote.entity';
+import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import {
   JUDGE_VOTE_CRITERIA,
   PUBLIC_VOTE_CRITERIA,
@@ -27,6 +28,7 @@ export class VotingService {
     private readonly candidates: Repository<Candidate>,
     @InjectRepository(User)
     private readonly users: Repository<User>,
+    private readonly realtime: RealtimeHubService,
   ) {}
 
   private allowedCriteriaForRole(role: string): readonly string[] {
@@ -100,7 +102,9 @@ export class VotingService {
     });
 
     try {
-      return await this.votes.save(vote);
+      const saved = await this.votes.save(vote);
+      this.realtime.broadcastRankingChanged();
+      return saved;
     } catch (e) {
       if (this.isPostgresUniqueViolation(e)) {
         throw new ConflictException(

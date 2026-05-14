@@ -1,15 +1,15 @@
 import { Star, Play, Lock } from 'lucide-react';
 
 interface ArtistCardProps {
-  id: number;
+  id: string;
   name: string;
   song: string;
   genre: string;
   image: string;
   hasVoted: boolean;
   isOpen: boolean;
-  onVote: (id: number) => void;
-  onViewDetails: (id: number) => void;
+  onVote: (id: string) => void;
+  onViewDetails: (id: string) => void;
 }
 
 export function ArtistCard({
@@ -24,7 +24,10 @@ export function ArtistCard({
   onViewDetails
 }: ArtistCardProps) {
   return (
-    <div className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow ${!isOpen ? 'opacity-60' : ''}`}>
+    <div
+      data-testid={`artist-card-${id}`}
+      className={`bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow ${!isOpen ? 'opacity-60' : ''}`}
+    >
       <div className="relative">
         <img
           src={image}

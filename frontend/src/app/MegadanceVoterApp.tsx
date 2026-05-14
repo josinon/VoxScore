@@ -1,14 +1,28 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router';
+import { toast } from 'sonner';
 import { useAuth } from '../auth/AuthProvider';
+import {
+  ApiError,
+  fetchCandidates,
+  fetchRanking,
+  submitVote,
+  type RankingEntryDto,
+} from '../lib/api';
+import { mapCandidateToArtist } from '../lib/candidate-mapper';
+import { isRealtimeEnabled } from '../lib/env';
+import { connectVoterRealtime } from '../lib/realtime-client';
+import {
+  addVotedCandidateId,
+  readVotedCandidateIds,
+} from '../lib/voted-candidates-storage';
 import { VotingHeader } from './components/VotingHeader';
 import { ArtistCard } from './components/ArtistCard';
 import { ArtistDetails } from './components/ArtistDetails';
 import { CriteriaVoting } from './components/CriteriaVoting';
 import { VoteConfirmation } from './components/VoteConfirmation';
 import { Ranking } from './components/Ranking';
-import { initialArtists } from './mock-artists';
-import { Artist, Criterion, Vote, ArtistScore } from './types';
+import { Artist, Criterion, RankingRow } from './types';
 
 const JUDGE_CRITERIA: Criterion[] = [
   {
@@ -76,9 +90,112 @@ function roleLabel(role: string): string {
   }
 }
 
-/** Área do eleitor; lista de candidatos ainda local (integração API por concluir). */
+function mapRankingEntries(
+  entries: RankingEntryDto[],
+  candidates: Artist[],
+): RankingRow[] {
+  const byId = new Map(candidates.map((c) => [c.id, c]));
+  return entries.map((e) => {
+    const c = byId.get(e.candidateId);
+    return {
+      rank: e.rank,
+      artistId: e.candidateId,
+      name: e.candidateName,
+      song: c?.song ?? '—',
+      image: c?.image ?? PLACEHOLDER_PHOTO,
+      judgeScore: e.judgeCompositeAverage ?? 0,
+      publicScore: e.publicCompositeAverage ?? 0,
+      totalScore: e.finalScore,
+    };
+  });
+}
+
 export function MegadanceVoterApp() {
   const { user, logout } = useAuth();
+
+  const [candidates, setCandidates] = useState<Artist[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+
+  const [votedIds, setVotedIds] = useState<Set<string>>(() => new Set());
+
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [votingArtist, setVotingArtist] = useState<Artist | null>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmedArtistName, setConfirmedArtistName] = useState('');
+  const [showRanking, setShowRanking] = useState(false);
+
+  const [rankingRows, setRankingRows] = useState<RankingRow[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
+  const [rankingError, setRankingError] = useState<string | null>(null);
+
+  const showRankingRef = useRef(false);
+  showRankingRef.current = showRanking;
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+    setVotedIds(readVotedCandidateIds(user.id));
+  }, [user?.id]);
+
+  const loadCandidates = useCallback(async () => {
+    try {
+      const rows = await fetchCandidates();
+      setCandidates(rows.map(mapCandidateToArtist));
+      setListError(null);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : 'Não foi possível carregar os candidatos.';
+      setListError(msg);
+    } finally {
+      setListLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadCandidates();
+  }, [loadCandidates]);
+
+  const loadRanking = useCallback(async () => {
+    setRankingLoading(true);
+    try {
+      const res = await fetchRanking();
+      setRankingRows(mapRankingEntries(res.entries, candidates));
+      setRankingError(null);
+    } catch (e) {
+      const msg =
+        e instanceof ApiError
+          ? e.message
+          : 'Não foi possível carregar o ranking.';
+      setRankingError(msg);
+    } finally {
+      setRankingLoading(false);
+    }
+  }, [candidates]);
+
+  useEffect(() => {
+    if (!showRanking) {
+      return;
+    }
+    void loadRanking();
+  }, [showRanking, loadRanking]);
+
+  useEffect(() => {
+    if (!user || (user.role !== 'PUBLIC' && user.role !== 'JUDGE')) {
+      return;
+    }
+    return connectVoterRealtime({
+      onCandidatesChanged: () => void loadCandidates(),
+      onRankingChanged: () => {
+        if (showRankingRef.current) {
+          void loadRanking();
+        }
+      },
+    });
+  }, [user, loadCandidates, loadRanking]);
 
   if (!user || (user.role !== 'PUBLIC' && user.role !== 'JUDGE')) {
     return <Navigate to="/admin" replace />;
@@ -93,19 +210,6 @@ export function MegadanceVoterApp() {
     photo: user.photoUrl ?? PLACEHOLDER_PHOTO,
   };
 
-  const artists = initialArtists;
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
-  const [votingArtist, setVotingArtist] = useState<Artist | null>(null);
-  const [votes, setVotes] = useState<Vote[]>([]);
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [confirmedArtistName, setConfirmedArtistName] = useState('');
-  const [showRanking, setShowRanking] = useState(false);
-  const [openArtistIds, setOpenArtistIds] = useState<number[]>([1, 2, 3]);
-
-  const votedArtistIds = votes
-    .filter((v) => v.voterRole === voterRole)
-    .map((v) => v.artistId);
-
   const handleLogout = () => {
     setSelectedArtist(null);
     setVotingArtist(null);
@@ -114,40 +218,60 @@ export function MegadanceVoterApp() {
     logout();
   };
 
-  const handleVote = (artistId: number) => {
-    if (votedArtistIds.includes(artistId)) return;
-    if (!openArtistIds.includes(artistId)) return;
-
-    const artist = artists.find((a) => a.id === artistId);
-    if (artist) {
-      setVotingArtist(artist);
+  const handleVote = (artistId: string) => {
+    if (votedIds.has(artistId)) {
+      return;
     }
+    const artist = candidates.find((a) => a.id === artistId);
+    if (!artist?.votingOpen) {
+      return;
+    }
+    setVotingArtist(artist);
   };
 
-  const handleSubmitVote = (
-    artistId: number,
+  const handleSubmitVote = async (
+    artistId: string,
     scores: Record<string, number>,
   ) => {
-    const newVote: Vote = {
-      artistId,
-      scores,
-      voterRole,
-      timestamp: Date.now(),
-    };
+    try {
+      await submitVote(artistId, scores);
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        addVotedCandidateId(user.id, artistId);
+        setVotedIds((prev) => new Set(prev).add(artistId));
+        throw new Error(
+          'Já existe um voto teu para este candidato. Não é possível votar novamente.',
+        );
+      }
+      if (e instanceof ApiError && e.status === 403) {
+        throw new Error(
+          'Votação fechada para este candidato ou não tens permissão para votar.',
+        );
+      }
+      if (e instanceof ApiError) {
+        throw new Error(e.message);
+      }
+      throw e;
+    }
 
-    setVotes((prev) => [...prev, newVote]);
+    addVotedCandidateId(user.id, artistId);
+    setVotedIds((prev) => new Set(prev).add(artistId));
 
-    const artist = artists.find((a) => a.id === artistId);
+    const artist = candidates.find((a) => a.id === artistId);
     if (artist) {
       setConfirmedArtistName(artist.name);
       setShowConfirmation(true);
     }
-
     setVotingArtist(null);
+    toast.success('Voto registado com sucesso.');
+    void loadCandidates();
+    if (showRanking) {
+      void loadRanking();
+    }
   };
 
-  const handleViewDetails = (artistId: number) => {
-    const artist = artists.find((a) => a.id === artistId);
+  const handleViewDetails = (artistId: string) => {
+    const artist = candidates.find((a) => a.id === artistId);
     if (artist) {
       setSelectedArtist(artist);
     }
@@ -156,53 +280,6 @@ export function MegadanceVoterApp() {
   const handleCloseConfirmation = () => {
     setShowConfirmation(false);
   };
-
-  const rankings: ArtistScore[] = useMemo(() => {
-    const artistScores = artists.map((artist) => {
-      const judgeVotesForArtist = votes.filter(
-        (v) => v.artistId === artist.id && v.voterRole === 'JUDGE',
-      );
-      const publicVotesForArtist = votes.filter(
-        (v) => v.artistId === artist.id && v.voterRole === 'PUBLIC',
-      );
-
-      const judgeScore =
-        judgeVotesForArtist.length > 0
-          ? judgeVotesForArtist.reduce((sum, vote) => {
-              const vals = Object.values(vote.scores);
-              const voteAvg =
-                vals.reduce((a, b) => a + b, 0) / vals.length;
-              return sum + voteAvg;
-            }, 0) / judgeVotesForArtist.length
-          : 0;
-
-      const publicScore =
-        publicVotesForArtist.length > 0
-          ? publicVotesForArtist.reduce((sum, vote) => {
-              const vals = Object.values(vote.scores);
-              const voteAvg =
-                vals.reduce((a, b) => a + b, 0) / vals.length;
-              return sum + voteAvg;
-            }, 0) / publicVotesForArtist.length
-          : 0;
-
-      const totalScore = judgeScore * 0.6 + publicScore * 0.4;
-
-      return {
-        artistId: artist.id,
-        name: artist.name,
-        song: artist.song,
-        image: artist.image,
-        judgeScore,
-        publicScore,
-        totalScore,
-        judgeVotes: judgeVotesForArtist.length,
-        publicVotes: publicVotesForArtist.length,
-      };
-    });
-
-    return artistScores.sort((a, b) => b.totalScore - a.totalScore);
-  }, [votes, artists]);
 
   if (votingArtist) {
     return (
@@ -219,8 +296,11 @@ export function MegadanceVoterApp() {
   if (showRanking) {
     return (
       <Ranking
-        rankings={rankings}
+        rankings={rankingRows}
         onClose={() => setShowRanking(false)}
+        loading={rankingLoading}
+        error={rankingError}
+        onRetry={() => void loadRanking()}
       />
     );
   }
@@ -239,41 +319,77 @@ export function MegadanceVoterApp() {
         <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Candidatos</h2>
           <p className="text-gray-600">
-            {votedArtistIds.length > 0
-              ? `Você avaliou ${votedArtistIds.length} artista(s)`
+            {votedIds.size > 0
+              ? `Você avaliou ${votedIds.size} artista(s)`
               : 'Escolha um artista com votação liberada para avaliar'}
           </p>
-          {openArtistIds.length === 0 && (
-            <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
-              <p className="text-amber-800 text-sm">
-                ⏳ Aguardando administrador liberar votações. Nenhuma apresentação
-                disponível no momento.
-              </p>
-            </div>
-          )}
+          <p className="text-xs text-gray-500 mt-1">
+            {isRealtimeEnabled()
+              ? 'Atualizações em tempo real via WebSocket (candidatos e ranking).'
+              : 'Tempo real desativado: recarregue a página para ver alterações.'}
+          </p>
         </div>
 
-        {artists.length === 0 ? (
+        {listLoading ? (
+          <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
+            A carregar candidatos…
+          </div>
+        ) : null}
+
+        {listError ? (
+          <div
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            role="alert"
+          >
+            <p className="mb-2">{listError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setListLoading(true);
+                void loadCandidates();
+              }}
+              className="font-semibold text-red-900 underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : null}
+
+        {!listLoading && candidates.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center mb-8">
             <p className="text-gray-500">
-              Nenhum candidato cadastrado. Aguarde o administrador adicionar
-              candidatos.
+              Nenhum candidato ativo. Aguarde o administrador ou volte mais
+              tarde.
             </p>
           </div>
-        ) : (
+        ) : null}
+
+        {!listLoading && candidates.length > 0 ? (
           <div className="grid gap-4 mb-8">
-            {artists.map((artist) => (
+            {candidates.map((artist) => (
               <ArtistCard
                 key={artist.id}
                 {...artist}
-                hasVoted={votedArtistIds.includes(artist.id)}
-                isOpen={openArtistIds.includes(artist.id)}
+                hasVoted={votedIds.has(artist.id)}
+                isOpen={artist.votingOpen}
                 onVote={handleVote}
                 onViewDetails={handleViewDetails}
               />
             ))}
           </div>
-        )}
+        ) : null}
+
+        {!listLoading &&
+        candidates.length > 0 &&
+        !candidates.some((a) => a.votingOpen) ? (
+          <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-amber-800 text-sm">
+              Nenhuma votação aberta de momento. A lista atualiza em tempo real
+              quando o administrador abrir uma votação
+              {isRealtimeEnabled() ? ' (WebSocket).' : '.'}
+            </p>
+          </div>
+        ) : null}
 
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-6 mb-6">
           <h3 className="text-xl font-bold mb-2">Como Funciona?</h3>
@@ -290,7 +406,9 @@ export function MegadanceVoterApp() {
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold">3.</span>
-              <span>Clique em &quot;Avaliar&quot; para dar notas de 1 a 10 por critérios</span>
+              <span>
+                Clique em &quot;Avaliar&quot; para dar notas de 1 a 10 por critérios
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold">4.</span>
@@ -307,7 +425,7 @@ export function MegadanceVoterApp() {
       {selectedArtist && (
         <ArtistDetails
           artist={selectedArtist}
-          hasVoted={votedArtistIds.includes(selectedArtist.id)}
+          hasVoted={votedIds.has(selectedArtist.id)}
           onClose={() => setSelectedArtist(null)}
           onVote={handleVote}
         />

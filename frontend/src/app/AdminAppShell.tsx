@@ -3,17 +3,24 @@ import { useAuth } from '../auth/AuthProvider';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Ranking } from './components/Ranking';
 import { initialArtists } from './mock-artists';
-import { Artist, Vote, ArtistScore } from './types';
+import { Artist, Vote, RankingRow } from './types';
 
 const PLACEHOLDER_PHOTO =
   'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop';
+
+function nextMockArtistId(artists: Artist[]): string {
+  const nums = artists
+    .map((a) => parseInt(a.id, 10))
+    .filter((n) => !Number.isNaN(n));
+  return String((nums.length ? Math.max(...nums) : 0) + 1);
+}
 
 export function AdminAppShell() {
   const { user, logout } = useAuth();
   const [artists, setArtists] = useState<Artist[]>(() =>
     initialArtists.map((a) => ({ ...a })),
   );
-  const [openArtistIds, setOpenArtistIds] = useState<number[]>([1, 2, 3]);
+  const [openArtistIds, setOpenArtistIds] = useState<string[]>(['1', '2', '3']);
   const [votes, setVotes] = useState<Vote[]>([]);
   const [showRanking, setShowRanking] = useState(false);
 
@@ -28,7 +35,7 @@ export function AdminAppShell() {
     logout();
   };
 
-  const handleToggleArtist = (artistId: number) => {
+  const handleToggleArtist = (artistId: string) => {
     setOpenArtistIds((prev) =>
       prev.includes(artistId)
         ? prev.filter((id) => id !== artistId)
@@ -37,24 +44,26 @@ export function AdminAppShell() {
   };
 
   const handleAddArtist = (artistData: Omit<Artist, 'id'>) => {
-    const newId = Math.max(...artists.map((a) => a.id), 0) + 1;
-    const newArtist: Artist = { ...artistData, id: newId };
+    const newArtist: Artist = {
+      ...artistData,
+      id: nextMockArtistId(artists),
+    };
     setArtists((prev) => [...prev, newArtist]);
   };
 
-  const handleUpdateArtist = (id: number, artistData: Omit<Artist, 'id'>) => {
+  const handleUpdateArtist = (id: string, artistData: Omit<Artist, 'id'>) => {
     setArtists((prev) =>
       prev.map((artist) => (artist.id === id ? { ...artistData, id } : artist)),
     );
   };
 
-  const handleDeleteArtist = (id: number) => {
+  const handleDeleteArtist = (id: string) => {
     setArtists((prev) => prev.filter((artist) => artist.id !== id));
     setOpenArtistIds((prev) => prev.filter((artistId) => artistId !== id));
     setVotes((prev) => prev.filter((vote) => vote.artistId !== id));
   };
 
-  const rankings: ArtistScore[] = useMemo(() => {
+  const rankings: RankingRow[] = useMemo(() => {
     const artistScores = artists.map((artist) => {
       const judgeVotesForArtist = votes.filter(
         (v) => v.artistId === artist.id && v.voterRole === 'JUDGE',
@@ -86,6 +95,7 @@ export function AdminAppShell() {
       const totalScore = judgeScore * 0.6 + publicScore * 0.4;
 
       return {
+        rank: 0,
         artistId: artist.id,
         name: artist.name,
         song: artist.song,
@@ -98,7 +108,8 @@ export function AdminAppShell() {
       };
     });
 
-    return artistScores.sort((a, b) => b.totalScore - a.totalScore);
+    const sorted = [...artistScores].sort((a, b) => b.totalScore - a.totalScore);
+    return sorted.map((row, index) => ({ ...row, rank: index + 1 }));
   }, [votes, artists]);
 
   if (showRanking) {

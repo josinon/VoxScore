@@ -3,8 +3,8 @@ import { Artist } from '../../types';
 
 interface ManageVotingProps {
   artists: Artist[];
-  openArtistIds: number[];
-  onToggleArtist: (artistId: number) => void;
+  openArtistIds: string[];
+  onToggleArtist: (artistId: string) => void;
 }
 
 export function ManageVoting({ artists, openArtistIds, onToggleArtist }: ManageVotingProps) {

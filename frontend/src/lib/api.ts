@@ -90,6 +90,101 @@ export async function postOAuthMock(body: {
   return (await res.json()) as { accessToken: string };
 }
 
+export type CandidateDto = {
+  id: string;
+  name: string;
+  musicTitle: string;
+  genre: string;
+  bio: string;
+  photoUrl: string;
+  instagramUrl: string | null;
+  youtubeUrl: string | null;
+  votingOpen: boolean;
+  displayOrder: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RankingEntryDto = {
+  rank: number;
+  candidateId: string;
+  candidateName: string;
+  judgeCompositeAverage: number | null;
+  publicCompositeAverage: number | null;
+  finalScore: number;
+  judgeCriteriaAverages: Record<string, number> | null;
+  publicCriteriaAverages: Record<string, number> | null;
+};
+
+export type RankingResponseDto = {
+  schemaVersion: 1;
+  entries: RankingEntryDto[];
+};
+
+export type VoteResponseDto = {
+  id: string;
+  candidateId: string;
+  criteriaScores: Record<string, number>;
+  createdAt: string;
+};
+
+export async function fetchCandidates(): Promise<CandidateDto[]> {
+  const res = await apiFetch('/candidates');
+  if (!res.ok) {
+    throw new ApiError(await safeErrorBody(res), res.status);
+  }
+  return (await res.json()) as CandidateDto[];
+}
+
+export async function fetchCandidate(id: string): Promise<CandidateDto> {
+  const res = await apiFetch(`/candidates/${encodeURIComponent(id)}`);
+  if (!res.ok) {
+    throw new ApiError(await safeErrorBody(res), res.status);
+  }
+  return (await res.json()) as CandidateDto;
+}
+
+export async function submitVote(
+  candidateId: string,
+  criteriaScores: Record<string, number>,
+): Promise<VoteResponseDto> {
+  const res = await apiFetch(`/candidates/${encodeURIComponent(candidateId)}/votes`, {
+    method: 'POST',
+    body: JSON.stringify({ criteriaScores }),
+  });
+  const bodyText = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(bodyText, res.status), res.status);
+  }
+  return JSON.parse(bodyText) as VoteResponseDto;
+}
+
+export async function fetchRanking(): Promise<RankingResponseDto> {
+  const res = await apiFetch('/ranking');
+  if (!res.ok) {
+    throw new ApiError(await safeErrorBody(res), res.status);
+  }
+  return (await res.json()) as RankingResponseDto;
+}
+
+function formatNestErrorMessage(body: string, status: number): string {
+  try {
+    const j = JSON.parse(body) as {
+      message?: string | string[];
+    };
+    if (Array.isArray(j.message)) {
+      return j.message.join('; ');
+    }
+    if (typeof j.message === 'string') {
+      return j.message;
+    }
+  } catch {
+    /* ignore */
+  }
+  return body?.trim() || `Erro HTTP ${status}`;
+}
+
 async function safeErrorBody(res: Response): Promise<string> {
   try {
     const t = await res.text();

@@ -1,25 +1,23 @@
 import { Trophy, Medal, Award, TrendingUp, Users } from 'lucide-react';
-
-interface ArtistScore {
-  artistId: number;
-  name: string;
-  song: string;
-  image: string;
-  judgeScore: number;
-  publicScore: number;
-  totalScore: number;
-  judgeVotes: number;
-  publicVotes: number;
-}
+import type { RankingRow } from '../types';
 
 interface RankingProps {
-  rankings: ArtistScore[];
+  rankings: RankingRow[];
   onClose: () => void;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
-export function Ranking({ rankings, onClose }: RankingProps) {
-  const getRankIcon = (position: number) => {
-    switch (position) {
+export function Ranking({
+  rankings,
+  onClose,
+  loading = false,
+  error = null,
+  onRetry,
+}: RankingProps) {
+  const getRankIcon = (rank: number) => {
+    switch (rank) {
       case 1:
         return <Trophy className="w-8 h-8 text-yellow-500" />;
       case 2:
@@ -29,14 +27,14 @@ export function Ranking({ rankings, onClose }: RankingProps) {
       default:
         return (
           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-            {position}
+            {rank}
           </div>
         );
     }
   };
 
-  const getRankBgColor = (position: number) => {
-    switch (position) {
+  const getRankBgColor = (podiumSlot: number) => {
+    switch (podiumSlot) {
       case 1:
         return 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200';
       case 2:
@@ -63,6 +61,7 @@ export function Ranking({ rankings, onClose }: RankingProps) {
               </div>
             </div>
             <button
+              type="button"
               onClick={onClose}
               className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-medium transition-colors"
             >
@@ -73,8 +72,34 @@ export function Ranking({ rankings, onClose }: RankingProps) {
       </div>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+        {loading && rankings.length === 0 ? (
+          <div className="mb-4 rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-600">
+            A carregar ranking…
+          </div>
+        ) : null}
+
+        {error ? (
+          <div
+            className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            role="alert"
+          >
+            <p className="mb-2">{error}</p>
+            {onRetry ? (
+              <button
+                type="button"
+                onClick={onRetry}
+                className="font-semibold text-red-900 underline"
+              >
+                Tentar novamente
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Como funciona a pontuação?</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">
+            Como funciona a pontuação?
+          </h2>
           <div className="grid md:grid-cols-2 gap-4 text-sm">
             <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
               <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
@@ -99,16 +124,17 @@ export function Ranking({ rankings, onClose }: RankingProps) {
 
         <div className="space-y-4">
           {rankings.map((artist, index) => {
-            const position = index + 1;
+            const podiumSlot = index < 3 ? index + 1 : 0;
 
             return (
               <div
                 key={artist.artistId}
-                className={`rounded-xl p-6 border-2 shadow-md ${getRankBgColor(position)} transition-all hover:shadow-lg`}
+                data-testid={`ranking-row-${artist.artistId}`}
+                className={`rounded-xl p-6 border-2 shadow-md ${getRankBgColor(podiumSlot)} transition-all hover:shadow-lg`}
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 min-w-0">
                   <div className="flex-shrink-0">
-                    {getRankIcon(position)}
+                    {getRankIcon(artist.rank)}
                   </div>
 
                   <img
@@ -133,33 +159,48 @@ export function Ranking({ rankings, onClose }: RankingProps) {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
-                  <div className="bg-white/50 rounded-lg p-3">
+                  <div className="bg-white/50 rounded-lg p-3 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Award className="w-4 h-4 text-amber-600" />
-                      <span className="text-xs font-semibold text-gray-600">Jurados</span>
+                      <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-gray-600">
+                        Jurados
+                      </span>
                     </div>
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex flex-wrap items-baseline gap-1">
                       <span className="text-xl font-bold text-gray-900">
                         {artist.judgeScore.toFixed(1)}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        ({artist.judgeVotes} {artist.judgeVotes === 1 ? 'voto' : 'votos'})
-                      </span>
+                      {artist.judgeVotes !== undefined && artist.judgeVotes > 0 ? (
+                        <span className="text-xs text-gray-500">
+                          ({artist.judgeVotes}{' '}
+                          {artist.judgeVotes === 1 ? 'voto' : 'votos'})
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500">média</span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="bg-white/50 rounded-lg p-3">
+                  <div className="bg-white/50 rounded-lg p-3 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Users className="w-4 h-4 text-blue-600" />
-                      <span className="text-xs font-semibold text-gray-600">Público</span>
+                      <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span className="text-xs font-semibold text-gray-600">
+                        Público
+                      </span>
                     </div>
-                    <div className="flex items-baseline gap-1">
+                    <div className="flex flex-wrap items-baseline gap-1">
                       <span className="text-xl font-bold text-gray-900">
                         {artist.publicScore.toFixed(1)}
                       </span>
-                      <span className="text-xs text-gray-500">
-                        ({artist.publicVotes} {artist.publicVotes === 1 ? 'voto' : 'votos'})
-                      </span>
+                      {artist.publicVotes !== undefined &&
+                      artist.publicVotes > 0 ? (
+                        <span className="text-xs text-gray-500">
+                          ({artist.publicVotes}{' '}
+                          {artist.publicVotes === 1 ? 'voto' : 'votos'})
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-500">média</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -167,6 +208,10 @@ export function Ranking({ rankings, onClose }: RankingProps) {
             );
           })}
         </div>
+
+        {!loading && rankings.length === 0 && !error ? (
+          <p className="text-center text-gray-500 py-8">Sem dados de ranking.</p>
+        ) : null}
       </main>
     </div>
   );

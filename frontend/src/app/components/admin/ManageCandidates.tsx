@@ -5,13 +5,13 @@ import { Artist } from '../../types';
 interface ManageCandidatesProps {
   artists: Artist[];
   onAddArtist: (artist: Omit<Artist, 'id'>) => void;
-  onUpdateArtist: (id: number, artist: Omit<Artist, 'id'>) => void;
-  onDeleteArtist: (id: number) => void;
+  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void;
+  onDeleteArtist: (id: string) => void;
 }
 
 export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDeleteArtist }: ManageCandidatesProps) {
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     song: '',
@@ -25,16 +25,21 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const artistData = {
+    const existing =
+      editingId !== null ? artists.find((a) => a.id === editingId) : undefined;
+    const artistData: Omit<Artist, 'id'> = {
       name: formData.name,
       song: formData.song,
       genre: formData.genre,
-      image: formData.image || 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400&h=400&fit=crop',
+      image:
+        formData.image ||
+        'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400&h=400&fit=crop',
       bio: formData.bio,
+      votingOpen: existing?.votingOpen ?? false,
       socialMedia: {
         instagram: formData.instagram || undefined,
-        youtube: formData.youtube || undefined
-      }
+        youtube: formData.youtube || undefined,
+      },
     };
 
     if (editingId !== null) {
@@ -60,7 +65,7 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
     setShowForm(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => {
     if (confirm('Tem certeza que deseja excluir este candidato? Todos os votos serão perdidos.')) {
       onDeleteArtist(id);
     }

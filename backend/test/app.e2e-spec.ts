@@ -3,6 +3,7 @@ import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
+import { configureNestWs } from './configure-nest-ws';
 
 const describeOrSkip = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -15,6 +16,7 @@ describeOrSkip('Health (e2e) — T1.1', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureNestWs(app);
     app.setGlobalPrefix('api/v1');
     await app.init();
   });

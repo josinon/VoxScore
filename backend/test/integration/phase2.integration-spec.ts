@@ -2,6 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../../src/app.module';
+import { configureNestWs } from '../configure-nest-ws';
 import { UserRole } from '../../src/common/user-role.enum';
 import { User } from '../../src/entities/user.entity';
 
@@ -12,6 +13,7 @@ async function bootstrapApp(): Promise<INestApplication> {
     imports: [AppModule],
   }).compile();
   const application = moduleFixture.createNestApplication();
+  configureNestWs(application);
   application.setGlobalPrefix('api/v1');
   application.useGlobalPipes(
     new ValidationPipe({

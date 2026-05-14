@@ -219,26 +219,27 @@ A SPA em **`frontend/`** obtém token/sessão, chama **`GET /users/me`**, persis
 
 ### Objetivo de implementação
 
-Substituir mocks locais pela **API real**: listagem e detalhe de candidatos, fluxo de votação com critérios corretos por papel, confirmação pós-voto, **ranking** consumindo `GET /ranking`; polling ou SSE/WebSocket se já existir no backend (senão **polling** documentado com intervalo razoável).
+Substituir mocks locais pela **API real**: listagem e detalhe de candidatos, fluxo de votação com critérios corretos por papel, confirmação pós-voto, **ranking** consumindo `GET /ranking`; **atualização em tempo real via WebSocket** (`GET` inicial + eventos push do backend), com reconexão simples no cliente e opção `VITE_REALTIME_ENABLED=false` para testes sem servidor WS.
 
 ### Entregas verificáveis
 
 - Telas conectadas aos endpoints; estados de carregamento e erro.
 - Bloqueio de UI alinhado ao backend (candidato fechado, já votou).
+- Gateway WebSocket na API (autenticação JWT por query `token`), emissão de eventos quando candidatos ou ranking mudam; proxy Vite com `ws: true` para `/api`.
 
 ### Test cases
 
 | ID | Descrição | Tipo |
 |----|-----------|------|
-| T8.1 | `PUBLIC`: lista candidatos; abre detalhe; envia 4 critérios; vê confirmação. | E2E UI ou manual |
-| T8.2 | Após votar, tentar votar de novo → mensagem de conflito alinhada ao backend. | E2E UI ou manual |
-| T8.3 | Ranking exibe top 3 e reflete mudança após novo voto (após refresh/poll). | Manual ou E2E |
-| T8.4 | Viewport estreita (375px): fluxo de votação utilizável sem overflow crítico. | Manual |
+| T8.1 | `PUBLIC`: lista candidatos; abre detalhe; envia 4 critérios; vê confirmação. | e2e [`frontend/e2e/voter-journey.spec.ts`](./frontend/e2e/voter-journey.spec.ts) |
+| T8.2 | Após votar, tentar votar de novo → mensagem de conflito alinhada ao backend. | e2e (mesmo ficheiro) |
+| T8.3 | Ranking exibe top 3 e reflete mudança após novo payload (reabrir ranking ou evento WS). | e2e (reabrir ranking) |
+| T8.4 | Viewport estreita (375px): fluxo de votação utilizável sem overflow crítico. | e2e (mesmo ficheiro) |
 
 ### Definition of done
 
-- [ ] Nenhum dado sensível de produção em fixtures do repo.
-- [ ] T8.1–T8.4 verdes.
+- [x] Nenhum dado sensível de produção em fixtures do repo.
+- [x] T8.1–T8.4 verdes — Playwright [`frontend/e2e/voter-journey.spec.ts`](./frontend/e2e/voter-journey.spec.ts); [`frontend/.env.example`](./frontend/.env.example) (`VITE_REALTIME_ENABLED`); gateway [`backend/src/realtime/`](./backend/src/realtime/).
 
 ---
 

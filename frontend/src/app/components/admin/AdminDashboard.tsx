@@ -8,11 +8,11 @@ import { Artist } from '../../types';
 
 interface AdminDashboardProps {
   artists: Artist[];
-  openArtistIds: number[];
-  onToggleArtist: (artistId: number) => void;
+  openArtistIds: string[];
+  onToggleArtist: (artistId: string) => void;
   onAddArtist: (artist: Omit<Artist, 'id'>) => void;
-  onUpdateArtist: (id: number, artist: Omit<Artist, 'id'>) => void;
-  onDeleteArtist: (id: number) => void;
+  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void;
+  onDeleteArtist: (id: string) => void;
   onShowRanking: () => void;
   user: {
     name: string;

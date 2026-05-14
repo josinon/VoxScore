@@ -22,6 +22,7 @@ export default defineConfig({
     env: {
       ...process.env,
       VITE_SHOW_DEV_LOGIN: 'true',
+      VITE_REALTIME_ENABLED: 'false',
     },
   },
 });

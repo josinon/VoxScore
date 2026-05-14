@@ -4,6 +4,11 @@ export function getApiBaseUrl(): string {
   return raw?.replace(/\/$/, '') ?? '';
 }
 
+/** Quando `false`, a SPA não abre WebSocket (útil em e2e sem servidor WS). */
+export function isRealtimeEnabled(): boolean {
+  return import.meta.env.VITE_REALTIME_ENABLED !== 'false';
+}
+
 export function getOAuthRedirectOrigin(): string {
   const raw = import.meta.env.VITE_OAUTH_REDIRECT_ORIGIN as string | undefined;
   if (raw?.trim()) {

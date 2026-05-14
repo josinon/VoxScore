@@ -7,7 +7,10 @@ interface VoteConfirmationProps {
 
 export function VoteConfirmation({ artistName, onClose }: VoteConfirmationProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div
+      data-testid="vote-confirmation"
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+    >
       <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center animate-scale-in">
         <div className="mb-6">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">

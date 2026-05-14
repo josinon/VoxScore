@@ -4,6 +4,7 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
+import { configureNestWs } from './configure-nest-ws';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 
@@ -20,6 +21,7 @@ describeOrSkip('Ranking (e2e) — Fase 6 (T6.3)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureNestWs(app);
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(
       new ValidationPipe({

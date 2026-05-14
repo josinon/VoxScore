@@ -1,13 +1,13 @@
-import { X, Heart, Play, Users, Music } from 'lucide-react';
+import { X, Heart, Play, Music } from 'lucide-react';
 
 interface Artist {
-  id: number;
+  id: string;
   name: string;
   song: string;
   genre: string;
-  votes: number;
   image: string;
   bio: string;
+  votingOpen: boolean;
   socialMedia: {
     instagram?: string;
     youtube?: string;
@@ -18,12 +18,22 @@ interface ArtistDetailsProps {
   artist: Artist;
   hasVoted: boolean;
   onClose: () => void;
-  onVote: (id: number) => void;
+  onVote: (id: string) => void;
 }
 
-export function ArtistDetails({ artist, hasVoted, onClose, onVote }: ArtistDetailsProps) {
+export function ArtistDetails({
+  artist,
+  hasVoted,
+  onClose,
+  onVote,
+}: ArtistDetailsProps) {
+  const canVote = artist.votingOpen && !hasVoted;
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-0 md:p-4">
+    <div
+      data-testid="artist-details-modal"
+      className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center p-0 md:p-4"
+    >
       <div className="bg-white w-full md:max-w-2xl md:rounded-2xl rounded-t-2xl max-h-[90vh] overflow-y-auto animate-slide-up">
         <div className="relative">
           <img
@@ -32,6 +42,8 @@ export function ArtistDetails({ artist, hasVoted, onClose, onVote }: ArtistDetai
             className="w-full h-64 object-cover"
           />
           <button
+            type="button"
+            data-testid="close-artist-details"
             onClick={onClose}
             className="absolute top-4 right-4 bg-black/60 text-white p-2 rounded-full hover:bg-black/80 transition-colors"
           >
@@ -50,11 +62,6 @@ export function ArtistDetails({ artist, hasVoted, onClose, onVote }: ArtistDetai
           <div className="flex items-center gap-4 mb-6 pb-6 border-b">
             <div className="bg-purple-100 text-purple-700 px-4 py-2 rounded-lg font-medium">
               {artist.genre}
-            </div>
-            <div className="flex items-center gap-2 text-gray-600">
-              <Users className="w-5 h-5" />
-              <span className="font-semibold">{artist.votes.toLocaleString('pt-BR')}</span>
-              <span className="text-sm">votos</span>
             </div>
           </div>
 
@@ -94,19 +101,24 @@ export function ArtistDetails({ artist, hasVoted, onClose, onVote }: ArtistDetai
           )}
 
           <button
+            type="button"
             onClick={() => {
               onVote(artist.id);
               onClose();
             }}
-            disabled={hasVoted}
+            disabled={!canVote}
             className={`w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold text-lg transition-colors ${
-              hasVoted
+              !canVote
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg'
             }`}
           >
             <Heart className={`w-5 h-5 ${hasVoted ? 'fill-current' : ''}`} />
-            {hasVoted ? 'Você já votou!' : 'Votar Agora'}
+            {hasVoted
+              ? 'Você já votou!'
+              : !artist.votingOpen
+                ? 'Votação fechada'
+                : 'Votar Agora'}
           </button>
         </div>
       </div>

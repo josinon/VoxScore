@@ -229,4 +229,4 @@ Detalhe operacional e exemplos de probes: [`deploy/kubernetes/README.md`](./depl
 6. Rotas e UI administrativas na mesma SPA (proteção por `ADMIN`); responsividade para admin em telas pequenas e grandes.
 7. Garantir que fluxos de eleitor não dependam de telas administrativas em produção; compartilhar componentes e tokens de design entre votação e admin.
 
-O pacote **`frontend/`** é a base **web responsiva** (Vite + React). Evoluir para **PWA** ou app **nativo** (React Native/Flutter) é decisão de produto independente da API. Tempo real no ranking: WebSocket/SSE vs polling — definir após carga e orçamento.
+O pacote **`frontend/`** é a base **web responsiva** (Vite + React). Evoluir para **PWA** ou app **nativo** (React Native/Flutter) é decisão de produto independente da API. Tempo real na jornada do eleitor (lista de candidatos e ranking): **WebSocket** na API (`/api/v1/ws?token=<JWT>`), com reconexão no cliente; ver [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md) Fase 8.

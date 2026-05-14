@@ -4,6 +4,7 @@ import type { Server } from 'http';
 import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
+import { configureNestWs } from './configure-nest-ws';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 import { JUDGE_VOTE_CRITERIA } from '../src/voting/voting.constants';
@@ -56,6 +57,7 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    configureNestWs(app);
     app.setGlobalPrefix('api/v1');
     app.useGlobalPipes(
       new ValidationPipe({
