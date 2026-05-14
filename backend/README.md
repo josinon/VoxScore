@@ -1,6 +1,6 @@
 # VoxScore — API (NestJS)
 
-Backend das Fases 1–3 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (com **mock** em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, endpoint `POST /auth/dev/token` apenas quando explicitamente ativado.
+Backend das Fases 1–4 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
 
 ## Pré-requisitos
 
@@ -73,6 +73,16 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 - **`GET /api/v1/users/me`** — `Authorization: Bearer <JWT>`.
 
+### Candidatos (Fase 4)
+
+- **`GET /api/v1/candidates`** — lista apenas candidatos com **`active: true`**, ordenados por `displayOrder` e nome.
+- **`GET /api/v1/candidates/:id`** — detalhe; quem não é **ADMIN** obtém **404** se o candidato estiver inativo.
+- **`POST /api/v1/candidates`**, **`PATCH /api/v1/candidates/:id`**, **`DELETE /api/v1/candidates/:id`** — apenas **ADMIN** (`403` para outros papéis). `DELETE` responde **204** sem corpo.
+
+### Documentação OpenAPI
+
+- Se **`SWAGGER_ENABLED`** não for `false`, a UI Swagger fica em **`http://localhost:<PORT>/api/v1/docs`** (botão **Authorize** para JWT Bearer).
+
 ### Verificação manual (T3.4)
 
 Com credenciais Google reais e `OAUTH_FRONTEND_REDIRECT_URL` apontando para o SPA de staging, concluir login no browser e confirmar que `GET /users/me` devolve o perfil esperado.
@@ -109,7 +119,7 @@ Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/hea
 |--------|-----------|
 | `npm run test` | Testes unitários (Jest) |
 | `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
-| `npm run test:e2e` | T1.1 (health), T2.2–T2.3 (`/users/me`, token dev), T3.1–T3.3 (mock OAuth, JWT) — exige `DATABASE_URL`, migrações aplicadas e variáveis JWT (no CI vêm do workflow) |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)** — exige `DATABASE_URL`, migrações e env conforme CI |
 
 Ordem sugerida com base de dados vazia:
 

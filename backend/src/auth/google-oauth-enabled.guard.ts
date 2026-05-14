@@ -15,6 +15,7 @@ export class GoogleOAuthEnabledGuard implements CanActivate {
   constructor(private readonly config: ConfigService) {}
 
   canActivate(_context: ExecutionContext): boolean {
+    void _context;
     const id = this.config.get<string>('GOOGLE_CLIENT_ID')?.trim();
     const secret = this.config.get<string>('GOOGLE_CLIENT_SECRET')?.trim();
     const callback = this.config.get<string>('GOOGLE_CALLBACK_URL')?.trim();

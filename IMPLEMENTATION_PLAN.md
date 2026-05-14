@@ -128,8 +128,8 @@ Fluxo de autenticação conforme DEVSPEC: **OAuth Google** tratado no backend (e
 
 ### Definition of done
 
-- [ ] OpenAPI/Swagger atualizado para candidatos (recomendado no DEVSPEC).
-- [ ] T4.1–T4.5 verdes.
+- [x] OpenAPI/Swagger com tag **candidatos** e DTOs documentados — UI em `/api/v1/docs` (desligar com `SWAGGER_ENABLED=false`).
+- [x] T4.1–T4.5 — [`backend/test/candidates.e2e-spec.ts`](./backend/test/candidates.e2e-spec.ts).
 
 ---
 

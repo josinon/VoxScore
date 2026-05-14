@@ -7,6 +7,7 @@ import { User } from './entities/user.entity';
 import { Vote } from './entities/vote.entity';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
+import { CandidatesModule } from './candidates/candidates.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { UsersModule } from './users/users.module';
     }),
     HealthModule,
     UsersModule,
+    CandidatesModule,
   ],
 })
 export class AppModule {}
