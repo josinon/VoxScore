@@ -67,11 +67,14 @@ Fora do escopo inicial (pode entrar em fases posteriores): **aplicação cliente
 |------|--------|-------|-------|
 | Ver candidatos / ranking | ✓ | ✓ | ✓ |
 | Votar (critérios do papel) | ✓ se votação aberta | ✓ se aberta | — |
-| CRUD candidatos | — | — | ✓ |
-| Abrir/fechar votação por candidato | — | — | ✓ |
-| Listar/editar usuários e `role` | — | — | ✓ |
+| `GET /api/v1/users` (listar utilizadores) | — | — | ✓ |
+| `PATCH /api/v1/users/:id` (`role`, `disabled`) | — | — | ✓ |
+| CRUD candidatos (`POST`/`PATCH`/`DELETE /candidates`) | — | — | ✓ |
+| Abrir/fechar votação (`PATCH /candidates/:id/voting`) | — | — | ✓ |
 
----
+**Último administrador:** o backend recusa despromover ou desativar o único `ADMIN` ativo (`403` — ver [`backend/README.md`](./backend/README.md) e `UsersService`).
+
+Detalhe das rotas: [`backend/README.md`](./backend/README.md) (secções Candidatos, Votação, Utilizadores).
 
 ## 3. Aplicação React responsiva
 

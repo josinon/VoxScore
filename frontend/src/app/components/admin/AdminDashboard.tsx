@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Music, Users, Settings, TrendingUp, LayoutDashboard } from 'lucide-react';
+import type { MeResponse, UserRole } from '../../../lib/api';
 import { UserMenu } from '../UserMenu';
 import { ManageCandidates } from './ManageCandidates';
 import { ManageUsers } from './ManageUsers';
@@ -8,11 +9,14 @@ import { Artist } from '../../types';
 
 interface AdminDashboardProps {
   artists: Artist[];
+  listLoading: boolean;
+  listError: string | null;
+  onRetryList: () => void;
   openArtistIds: string[];
-  onToggleArtist: (artistId: string) => void;
-  onAddArtist: (artist: Omit<Artist, 'id'>) => void;
-  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void;
-  onDeleteArtist: (id: string) => void;
+  onToggleArtist: (artistId: string) => void | Promise<void>;
+  onAddArtist: (artist: Omit<Artist, 'id'>) => void | Promise<void>;
+  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void | Promise<void>;
+  onDeleteArtist: (id: string) => void | Promise<void>;
   onShowRanking: () => void;
   user: {
     name: string;
@@ -20,12 +24,23 @@ interface AdminDashboardProps {
     photo: string;
   };
   onLogout: () => void;
+  users: MeResponse[];
+  usersLoading: boolean;
+  usersError: string | null;
+  onLoadUsers: () => void;
+  onPatchUser: (
+    id: string,
+    body: { role?: UserRole; disabled?: boolean },
+  ) => void | Promise<void>;
 }
 
 type TabType = 'overview' | 'candidates' | 'users' | 'voting';
 
 export function AdminDashboard({
   artists,
+  listLoading,
+  listError,
+  onRetryList,
   openArtistIds,
   onToggleArtist,
   onAddArtist,
@@ -33,15 +48,26 @@ export function AdminDashboard({
   onDeleteArtist,
   onShowRanking,
   user,
-  onLogout
+  onLogout,
+  users,
+  usersLoading,
+  usersError,
+  onLoadUsers,
+  onPatchUser,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  useEffect(() => {
+    if (activeTab === 'users') {
+      onLoadUsers();
+    }
+  }, [activeTab, onLoadUsers]);
 
   const tabs = [
     { id: 'overview' as TabType, label: 'Visão Geral', icon: LayoutDashboard },
     { id: 'candidates' as TabType, label: 'Candidatos', icon: Music },
     { id: 'users' as TabType, label: 'Usuários', icon: Users },
-    { id: 'voting' as TabType, label: 'Votação', icon: Settings }
+    { id: 'voting' as TabType, label: 'Votação', icon: Settings },
   ];
 
   return (
@@ -60,6 +86,7 @@ export function AdminDashboard({
             </div>
             <div className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={onShowRanking}
                 className="bg-white/20 hover:bg-white/30 px-3 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
@@ -75,6 +102,7 @@ export function AdminDashboard({
               const Icon = tab.icon;
               return (
                 <button
+                  type="button"
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-medium transition-all whitespace-nowrap ${
@@ -117,7 +145,9 @@ export function AdminDashboard({
                   <h3 className="font-semibold text-gray-600">Votações Fechadas</h3>
                   <Settings className="w-8 h-8 text-red-600" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900">{artists.length - openArtistIds.length}</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {artists.length - openArtistIds.length}
+                </p>
               </div>
             </div>
 
@@ -125,30 +155,33 @@ export function AdminDashboard({
               <h2 className="text-xl font-bold text-gray-900 mb-4">Acesso Rápido</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <button
+                  type="button"
                   onClick={() => setActiveTab('candidates')}
                   className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all text-left"
                 >
                   <Music className="w-6 h-6 mb-2" />
                   <h3 className="font-bold mb-1">Gerenciar Candidatos</h3>
-                  <p className="text-sm text-white/90">Adicionar, editar ou remover candidatos</p>
+                  <p className="text-sm text-white/90">CRUD na API</p>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('users')}
                   className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all text-left"
                 >
                   <Users className="w-6 h-6 mb-2" />
                   <h3 className="font-bold mb-1">Gerenciar Usuários</h3>
-                  <p className="text-sm text-white/90">Controlar roles e acessos</p>
+                  <p className="text-sm text-white/90">Papéis e estado</p>
                 </button>
 
                 <button
+                  type="button"
                   onClick={() => setActiveTab('voting')}
                   className="bg-gradient-to-r from-green-600 to-emerald-600 text-white p-4 rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all text-left"
                 >
                   <Settings className="w-6 h-6 mb-2" />
                   <h3 className="font-bold mb-1">Controlar Votação</h3>
-                  <p className="text-sm text-white/90">Abrir e fechar votações</p>
+                  <p className="text-sm text-white/90">Abrir e fechar por candidato</p>
                 </button>
               </div>
             </div>
@@ -156,31 +189,74 @@ export function AdminDashboard({
             <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-6">
               <h3 className="text-xl font-bold mb-4">Instruções de Operação</h3>
               <div className="space-y-2 text-sm">
-                <p>✓ <strong>Candidatos:</strong> Gerencie a lista completa de artistas participantes</p>
-                <p>✓ <strong>Usuários:</strong> Controle permissões de jurados, público e outros administradores</p>
-                <p>✓ <strong>Votação:</strong> Abra votações após cada apresentação e feche quando necessário</p>
-                <p>✓ <strong>Ranking:</strong> Acompanhe resultados em tempo real</p>
+                <p>
+                  ✓ <strong>Candidatos:</strong> criar, editar ou eliminar na API; candidatos
+                  inativos não aparecem na votação pública.
+                </p>
+                <p>
+                  ✓ <strong>Usuários:</strong> alterar papel (Público / Jurado / Admin) e
+                  desativar conta; o último administrador não pode ser despromovido.
+                </p>
+                <p>
+                  ✓ <strong>Votação:</strong> abrir ou fechar por candidato (sincronizado com a
+                  área do eleitor em tempo real).
+                </p>
+                <p>
+                  ✓ <strong>Ranking:</strong> dados do servidor (GET /ranking).
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {activeTab === 'candidates' && (
-          <ManageCandidates
-            artists={artists}
-            onAddArtist={onAddArtist}
-            onUpdateArtist={onUpdateArtist}
-            onDeleteArtist={onDeleteArtist}
-          />
+          <div className="space-y-4">
+            {listError ? (
+              <div
+                className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+                role="alert"
+              >
+                <p className="mb-2">{listError}</p>
+                <button
+                  type="button"
+                  onClick={onRetryList}
+                  className="font-semibold text-red-900 underline"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            ) : null}
+            {listLoading ? (
+              <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
+                A carregar candidatos…
+              </div>
+            ) : (
+              <ManageCandidates
+                artists={artists}
+                onAddArtist={onAddArtist}
+                onUpdateArtist={onUpdateArtist}
+                onDeleteArtist={onDeleteArtist}
+              />
+            )}
+          </div>
         )}
 
-        {activeTab === 'users' && <ManageUsers />}
+        {activeTab === 'users' && (
+          <ManageUsers
+            users={users}
+            loading={usersLoading}
+            error={usersError}
+            onRetry={() => onLoadUsers()}
+            onPatchUser={onPatchUser}
+          />
+        )}
 
         {activeTab === 'voting' && (
           <ManageVoting
             artists={artists}
             openArtistIds={openArtistIds}
             onToggleArtist={onToggleArtist}
+            listLoading={listLoading}
           />
         )}
       </main>

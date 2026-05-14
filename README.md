@@ -12,9 +12,10 @@ Resumo das funcionalidades — **Megadance 2026**.
 
 ### Administrador
 
-- Controle de abertura/fechamento de votação por candidato
-- Visualização do ranking em tempo real
-- Indicadores visuais (verde = aberta, vermelho = fechada)
+- **CRUD de candidatos** e flag **ativo** (candidatos inativos não aparecem na lista pública) via API
+- **Abertura/fechamento de votação** por candidato (`PATCH .../voting`), com indicadores verde/cinza na UI
+- **Gestão de utilizadores**: listar, alterar papel (`PUBLIC` / `JUDGE` / `ADMIN`) e desativar; o servidor impede remover o último `ADMIN`
+- **Ranking** do servidor (`GET /ranking`) no painel
 
 ### Jurado
 
@@ -51,12 +52,7 @@ Avaliação por **4 critérios de preferência**:
 
 ## 4. Candidatos
 
-6 artistas pré-cadastrados com:
-
-- Nome, música, gênero
-- Foto, biografia
-- Links para redes sociais (Instagram / YouTube)
-- Tela de detalhes completa para cada artista
+Candidatos geridos pelo **administrador** na API (nome, música, género, foto, biografia, redes). A lista pública mostra apenas candidatos **ativos**; o painel admin lista todos (incl. inativos) para gestão.
 
 ## 5. Ranking
 
@@ -75,7 +71,7 @@ Avaliação por **4 critérios de preferência**:
 
 ## 7. Fluxo completo
 
-Login → Seleção de perfil → Votação (conforme liberação do admin) → Ranking
+Login (papel definido pelo servidor) → Votação ou painel admin (conforme `role`) → Ranking quando disponível.
 
 ## Desenvolvimento e implantação
 

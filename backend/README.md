@@ -73,9 +73,14 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 - **`GET /api/v1/users/me`** — `Authorization: Bearer <JWT>`.
 
+### Utilizadores (gestão admin)
+
+- **`GET /api/v1/users`** — apenas **ADMIN**; lista todos os utilizadores (mesmo formato que `me`, ordenados por data de criação).
+- **`PATCH /api/v1/users/:id`** — apenas **ADMIN**; corpo JSON com pelo menos um campo: **`role`** (`PUBLIC` \| `JUDGE` \| `ADMIN`) e/ou **`disabled`** (boolean). Não é permitido despromover ou desativar o **último** `ADMIN` ativo — resposta **403** com mensagem explícita.
+
 ### Candidatos (Fase 4)
 
-- **`GET /api/v1/candidates`** — lista apenas candidatos com **`active: true`**, ordenados por `displayOrder` e nome.
+- **`GET /api/v1/candidates`** — utilizadores **`PUBLIC`** / **`JUDGE`**: apenas candidatos com **`active: true`**. **`ADMIN`**: todos os candidatos (incl. `active: false`), mesma ordenação.
 - **`GET /api/v1/candidates/:id`** — detalhe; quem não é **ADMIN** obtém **404** se o candidato estiver inativo.
 - **`POST /api/v1/candidates`**, **`PATCH /api/v1/candidates/:id`**, **`DELETE /api/v1/candidates/:id`** — apenas **ADMIN** (`403` para outros papéis). `DELETE` responde **204** sem corpo.
 

@@ -1,17 +1,34 @@
 import { useState } from 'react';
 import { Plus, Edit, Trash2, X, Save, Image as ImageIcon } from 'lucide-react';
 import { Artist } from '../../types';
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { Button } from '../ui/button';
 
 interface ManageCandidatesProps {
   artists: Artist[];
-  onAddArtist: (artist: Omit<Artist, 'id'>) => void;
-  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void;
-  onDeleteArtist: (id: string) => void;
+  onAddArtist: (artist: Omit<Artist, 'id'>) => void | Promise<void>;
+  onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void | Promise<void>;
+  onDeleteArtist: (id: string) => void | Promise<void>;
 }
 
-export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDeleteArtist }: ManageCandidatesProps) {
+export function ManageCandidates({
+  artists,
+  onAddArtist,
+  onUpdateArtist,
+  onDeleteArtist,
+}: ManageCandidatesProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     song: '',
@@ -19,12 +36,12 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
     image: '',
     bio: '',
     instagram: '',
-    youtube: ''
+    youtube: '',
+    active: true,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const existing =
       editingId !== null ? artists.find((a) => a.id === editingId) : undefined;
     const artistData: Omit<Artist, 'id'> = {
@@ -36,19 +53,25 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
         'https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=400&h=400&fit=crop',
       bio: formData.bio,
       votingOpen: existing?.votingOpen ?? false,
+      active: formData.active,
+      displayOrder: existing?.displayOrder ?? 0,
       socialMedia: {
         instagram: formData.instagram || undefined,
         youtube: formData.youtube || undefined,
       },
     };
 
-    if (editingId !== null) {
-      onUpdateArtist(editingId, artistData);
-    } else {
-      onAddArtist(artistData);
+    setSubmitting(true);
+    try {
+      if (editingId !== null) {
+        await onUpdateArtist(editingId, artistData);
+      } else {
+        await onAddArtist(artistData);
+      }
+      resetForm();
+    } finally {
+      setSubmitting(false);
     }
-
-    resetForm();
   };
 
   const handleEdit = (artist: Artist) => {
@@ -60,14 +83,22 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
       image: artist.image,
       bio: artist.bio,
       instagram: artist.socialMedia.instagram || '',
-      youtube: artist.socialMedia.youtube || ''
+      youtube: artist.socialMedia.youtube || '',
+      active: artist.active,
     });
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este candidato? Todos os votos serão perdidos.')) {
-      onDeleteArtist(id);
+  const confirmDelete = async () => {
+    if (!deleteId) {
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await onDeleteArtist(deleteId);
+      setDeleteId(null);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -79,7 +110,8 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
       image: '',
       bio: '',
       instagram: '',
-      youtube: ''
+      youtube: '',
+      active: true,
     });
     setEditingId(null);
     setShowForm(false);
@@ -87,12 +119,36 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
 
   return (
     <div className="space-y-6">
+      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar candidato?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove o candidato no servidor. Votos associados deixam de contar no
+              ranking conforme a regra da API.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={submitting}
+              onClick={() => void confirmDelete()}
+            >
+              {submitting ? 'A eliminar…' : 'Eliminar'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Gerenciar Candidatos</h2>
           <p className="text-gray-600">Total: {artists.length} candidato(s)</p>
         </div>
         <button
+          type="button"
           onClick={() => setShowForm(true)}
           className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center gap-2"
         >
@@ -107,12 +163,12 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
             <h3 className="text-xl font-bold text-gray-900">
               {editingId !== null ? 'Editar Candidato' : 'Novo Candidato'}
             </h3>
-            <button onClick={resetForm} className="text-gray-500 hover:text-gray-700">
+            <button type="button" onClick={resetForm} className="text-gray-500 hover:text-gray-700">
               <X className="w-6 h-6" />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1">
@@ -172,9 +228,7 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Biografia *
-              </label>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Biografia *</label>
               <textarea
                 required
                 value={formData.bio}
@@ -213,13 +267,28 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
               </div>
             </div>
 
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+              <input
+                type="checkbox"
+                checked={formData.active}
+                onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              Candidato ativo (visível na lista pública de votação)
+            </label>
+
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center justify-center gap-2"
+                disabled={submitting}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-6 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 <Save className="w-5 h-5" />
-                {editingId !== null ? 'Salvar Alterações' : 'Adicionar Candidato'}
+                {submitting
+                  ? 'A guardar…'
+                  : editingId !== null
+                    ? 'Salvar Alterações'
+                    : 'Adicionar Candidato'}
               </button>
               <button
                 type="button"
@@ -238,6 +307,7 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
           <div className="bg-white rounded-xl p-12 text-center">
             <p className="text-gray-500 mb-4">Nenhum candidato cadastrado.</p>
             <button
+              type="button"
               onClick={() => setShowForm(true)}
               className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-bold hover:from-purple-700 hover:to-pink-700 transition-colors inline-flex items-center gap-2"
             >
@@ -259,9 +329,23 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
                 />
 
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">
-                    {artist.name}
-                  </h3>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <h3 className="font-bold text-gray-900 text-lg truncate">{artist.name}</h3>
+                    {!artist.active ? (
+                      <span className="text-xs font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded">
+                        Inativo
+                      </span>
+                    ) : null}
+                    {artist.votingOpen ? (
+                      <span className="text-xs font-semibold bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                        Votação aberta
+                      </span>
+                    ) : (
+                      <span className="text-xs font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                        Votação fechada
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-600 text-sm truncate mb-1">{artist.song}</p>
                   <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">
                     {artist.genre}
@@ -270,6 +354,7 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
 
                 <div className="flex gap-2 flex-shrink-0">
                   <button
+                    type="button"
                     onClick={() => handleEdit(artist)}
                     className="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-lg transition-colors"
                     title="Editar"
@@ -277,7 +362,8 @@ export function ManageCandidates({ artists, onAddArtist, onUpdateArtist, onDelet
                     <Edit className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={() => handleDelete(artist.id)}
+                    type="button"
+                    onClick={() => setDeleteId(artist.id)}
                     className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-lg transition-colors"
                     title="Excluir"
                   >

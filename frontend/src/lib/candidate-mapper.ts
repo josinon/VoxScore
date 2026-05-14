@@ -10,6 +10,8 @@ export function mapCandidateToArtist(c: CandidateDto): Artist {
     image: c.photoUrl,
     bio: c.bio,
     votingOpen: c.votingOpen,
+    active: c.active,
+    displayOrder: c.displayOrder,
     socialMedia: {
       instagram: c.instagramUrl ?? undefined,
       youtube: c.youtubeUrl ?? undefined,

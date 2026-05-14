@@ -42,6 +42,14 @@ export class CandidatesService {
     return rows.map((c) => this.toResponse(c));
   }
 
+  /** Lista completa para o painel admin (inclui `active: false`). */
+  async findAllForAdmin(): Promise<CandidateResponseDto[]> {
+    const rows = await this.candidates.find({
+      order: { displayOrder: 'ASC', name: 'ASC' },
+    });
+    return rows.map((c) => this.toResponse(c));
+  }
+
   async findOneById(
     id: string,
     requesterRole: string,

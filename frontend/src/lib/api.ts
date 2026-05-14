@@ -168,6 +168,100 @@ export async function fetchRanking(): Promise<RankingResponseDto> {
   return (await res.json()) as RankingResponseDto;
 }
 
+export async function fetchUsers(): Promise<MeResponse[]> {
+  const res = await apiFetch('/users');
+  if (!res.ok) {
+    throw new ApiError(await safeErrorBody(res), res.status);
+  }
+  return (await res.json()) as MeResponse[];
+}
+
+export async function patchUser(
+  id: string,
+  body: { role?: UserRole; disabled?: boolean },
+): Promise<MeResponse> {
+  const res = await apiFetch(`/users/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as MeResponse;
+}
+
+export type CreateCandidateBody = {
+  name: string;
+  musicTitle: string;
+  genre: string;
+  bio: string;
+  photoUrl: string;
+  instagramUrl?: string | null;
+  youtubeUrl?: string | null;
+  votingOpen?: boolean;
+  displayOrder?: number;
+  active?: boolean;
+};
+
+export async function createCandidate(
+  body: CreateCandidateBody,
+): Promise<CandidateDto> {
+  const res = await apiFetch('/candidates', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as CandidateDto;
+}
+
+export async function updateCandidate(
+  id: string,
+  body: Partial<CreateCandidateBody>,
+): Promise<CandidateDto> {
+  const res = await apiFetch(`/candidates/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as CandidateDto;
+}
+
+export async function deleteCandidate(id: string): Promise<void> {
+  const res = await apiFetch(`/candidates/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (res.status === 204) {
+    return;
+  }
+  const text = await res.text();
+  throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+}
+
+export async function setCandidateVotingOpen(
+  candidateId: string,
+  open: boolean,
+): Promise<CandidateDto> {
+  const res = await apiFetch(
+    `/candidates/${encodeURIComponent(candidateId)}/voting`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ open }),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as CandidateDto;
+}
+
 function formatNestErrorMessage(body: string, status: number): string {
   try {
     const j = JSON.parse(body) as {

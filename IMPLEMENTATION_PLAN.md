@@ -258,15 +258,15 @@ Telas admin na mesma SPA: **CRUD candidatos**, **abrir/fechar votação** por ca
 
 | ID | Descrição | Tipo |
 |----|-----------|------|
-| T9.1 | `ADMIN`: cria/edita/remove (ou desativa) candidato; mudança aparece na lista do eleitor após refresh. | Manual ou E2E |
-| T9.2 | `ADMIN`: alterna `votingOpen`; eleitor vê bloqueio/liberação coerente. | Manual ou E2E |
-| T9.3 | `ADMIN`: promove usuário a `JUDGE`; login como esse usuário mostra 5 critérios. | Manual ou E2E |
-| T9.4 | `PUBLIC`: chamadas admin via DevTools falham (403 no cliente e no servidor). | Manual |
+| T9.1 | `ADMIN`: cria/edita/remove (ou desativa) candidato; mudança aparece na lista do eleitor após refresh. | e2e [`frontend/e2e/admin-journey.spec.ts`](./frontend/e2e/admin-journey.spec.ts) |
+| T9.2 | `ADMIN`: alterna `votingOpen`; eleitor vê bloqueio/liberação coerente. | e2e [`frontend/e2e/admin-journey.spec.ts`](./frontend/e2e/admin-journey.spec.ts) |
+| T9.3 | `ADMIN`: promove usuário a `JUDGE`; login como esse usuário mostra 5 critérios. | e2e [`frontend/e2e/admin-journey.spec.ts`](./frontend/e2e/admin-journey.spec.ts) |
+| T9.4 | `PUBLIC`: chamadas admin via DevTools falham (403 no cliente e no servidor). | e2e [`frontend/e2e/admin-journey.spec.ts`](./frontend/e2e/admin-journey.spec.ts) |
 
 ### Definition of done
 
-- [ ] Matriz de permissões da Fase 9 documentada em 1 página no README do monorepo ou DEVSPEC (link).
-- [ ] T9.1–T9.4 verdes.
+- [x] Matriz de permissões da Fase 9 documentada em 1 página no README do monorepo ou DEVSPEC (link).
+- [x] T9.1–T9.4 verdes — Playwright [`frontend/e2e/admin-journey.spec.ts`](./frontend/e2e/admin-journey.spec.ts).
 
 ---
 

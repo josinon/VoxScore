@@ -7,6 +7,9 @@ export interface Artist {
   bio: string;
   /** Votação aberta para este candidato (servidor). */
   votingOpen: boolean;
+  /** Candidato visível na votação pública (`GET /candidates`). */
+  active: boolean;
+  displayOrder?: number;
   socialMedia: {
     instagram?: string;
     youtube?: string;

@@ -7,9 +7,9 @@ import {
   fetchCandidates,
   fetchRanking,
   submitVote,
-  type RankingEntryDto,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
+import { mapRankingEntriesToRows } from '../lib/ranking-map';
 import { isRealtimeEnabled } from '../lib/env';
 import { connectVoterRealtime } from '../lib/realtime-client';
 import {
@@ -90,26 +90,6 @@ function roleLabel(role: string): string {
   }
 }
 
-function mapRankingEntries(
-  entries: RankingEntryDto[],
-  candidates: Artist[],
-): RankingRow[] {
-  const byId = new Map(candidates.map((c) => [c.id, c]));
-  return entries.map((e) => {
-    const c = byId.get(e.candidateId);
-    return {
-      rank: e.rank,
-      artistId: e.candidateId,
-      name: e.candidateName,
-      song: c?.song ?? '—',
-      image: c?.image ?? PLACEHOLDER_PHOTO,
-      judgeScore: e.judgeCompositeAverage ?? 0,
-      publicScore: e.publicCompositeAverage ?? 0,
-      totalScore: e.finalScore,
-    };
-  });
-}
-
 export function MegadanceVoterApp() {
   const { user, logout } = useAuth();
 
@@ -140,6 +120,7 @@ export function MegadanceVoterApp() {
   }, [user?.id]);
 
   const loadCandidates = useCallback(async () => {
+    setListLoading(true);
     try {
       const rows = await fetchCandidates();
       setCandidates(rows.map(mapCandidateToArtist));
@@ -156,14 +137,41 @@ export function MegadanceVoterApp() {
   }, []);
 
   useEffect(() => {
-    void loadCandidates();
-  }, [loadCandidates]);
+    let cancelled = false;
+    setListLoading(true);
+    void (async () => {
+      try {
+        const rows = await fetchCandidates();
+        if (cancelled) {
+          return;
+        }
+        setCandidates(rows.map(mapCandidateToArtist));
+        setListError(null);
+      } catch (e) {
+        if (cancelled) {
+          return;
+        }
+        const msg =
+          e instanceof ApiError
+            ? e.message
+            : 'Não foi possível carregar os candidatos.';
+        setListError(msg);
+      } finally {
+        if (!cancelled) {
+          setListLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const loadRanking = useCallback(async () => {
     setRankingLoading(true);
     try {
       const res = await fetchRanking();
-      setRankingRows(mapRankingEntries(res.entries, candidates));
+      setRankingRows(mapRankingEntriesToRows(res.entries, candidates));
       setRankingError(null);
     } catch (e) {
       const msg =

@@ -4,18 +4,31 @@ import { Artist } from '../../types';
 interface ManageVotingProps {
   artists: Artist[];
   openArtistIds: string[];
-  onToggleArtist: (artistId: string) => void;
+  onToggleArtist: (artistId: string) => void | Promise<void>;
+  listLoading?: boolean;
 }
 
-export function ManageVoting({ artists, openArtistIds, onToggleArtist }: ManageVotingProps) {
+export function ManageVoting({
+  artists,
+  openArtistIds,
+  onToggleArtist,
+  listLoading = false,
+}: ManageVotingProps) {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Controle de Votação</h2>
         <p className="text-gray-600">
-          Libere a votação após cada apresentação. Apenas apresentações liberadas recebem votos.
+          Libere a votação após cada apresentação. O estado reflete o campo
+          votingOpen no servidor.
         </p>
       </div>
+
+      {listLoading ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-600">
+          A carregar candidatos…
+        </div>
+      ) : null}
 
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-green-500">
@@ -71,7 +84,8 @@ export function ManageVoting({ artists, openArtistIds, onToggleArtist }: ManageV
                 </div>
 
                 <button
-                  onClick={() => onToggleArtist(artist.id)}
+                  type="button"
+                  onClick={() => void onToggleArtist(artist.id)}
                   className={`flex-shrink-0 flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${
                     isOpen
                       ? 'bg-red-500 hover:bg-red-600 text-white'

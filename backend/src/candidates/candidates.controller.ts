@@ -44,12 +44,17 @@ export class CandidatesController {
 
   @Get()
   @ApiOperation({
-    summary: 'Listar candidatos ativos',
+    summary: 'Listar candidatos',
     description:
-      'Qualquer utilizador autenticado. Apenas candidatos com `active: true`, ordenados por `displayOrder` e nome.',
+      'Público/jurado: apenas `active: true`. **ADMIN**: todos os candidatos (incl. inativos), mesma ordenação.',
   })
   @ApiOkResponse({ type: CandidateResponseDto, isArray: true })
-  async list(): Promise<CandidateResponseDto[]> {
+  async list(
+    @Req() req: Request & { user: JwtUser },
+  ): Promise<CandidateResponseDto[]> {
+    if ((req.user.role as UserRole) === UserRole.ADMIN) {
+      return this.candidatesService.findAllForAdmin();
+    }
     return this.candidatesService.findAllForAuthenticated();
   }
 
