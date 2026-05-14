@@ -92,8 +92,12 @@
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
+    "coveragePathIgnorePatterns": [
+      "jest-setup.ts"
+    ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/jest-setup.ts"],
     "passWithNoTests": true
   }
 }
