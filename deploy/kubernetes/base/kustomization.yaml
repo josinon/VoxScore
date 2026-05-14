@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: voxscore
+
+resources:
+  - namespace.yaml
+  - configmap-api.yaml
+  - deployment-api.yaml
+  - service-api.yaml
+  - deployment-frontend.yaml
+  - service-frontend.yaml
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/part-of: voxscore
+
+images:
+  - name: voxscore/api
+    newName: voxscore/api
+    newTag: latest
+  - name: voxscore/frontend
+    newName: voxscore/frontend
+    newTag: latest

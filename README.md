@@ -86,4 +86,4 @@ Login (papel definido pelo servidor) → Votação ou painel admin (conforme `ro
 
 - Especificação técnica: [DEVSPEC.md](./DEVSPEC.md) (inclui **Kubernetes** para API e frontend, §5.1).
 - Plano por fases: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
-- Guia de cluster: [deploy/kubernetes/README.md](./deploy/kubernetes/README.md).
+- Guia de cluster e manifestos Kustomize: [deploy/kubernetes/README.md](./deploy/kubernetes/README.md) (`base/`, overlays `with-postgres/` e `local/`, Dockerfiles em `backend/` e `frontend/`).

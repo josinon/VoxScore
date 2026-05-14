@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: voxscore-api-config
+  labels:
+    app.kubernetes.io/name: voxscore-api
+data:
+  PORT: '3000'
+  TYPEORM_MIGRATIONS_RUN: 'false'
+  AUTH_DEV_TOKEN_ENABLED: 'false'
+  AUTH_GOOGLE_MOCK_ENABLED: 'false'
+  SWAGGER_ENABLED: 'false'
+  BOOTSTRAP_ADMIN_EMAIL: admin@example.com
+  BOOTSTRAP_ADMIN_DISPLAY_NAME: Administrator
+  # Alinhar com o URL público do Ingress do frontend (mesmo host que `/` ou host dedicado).
+  CORS_ORIGINS: https://voxscore.example.com

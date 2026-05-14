@@ -144,6 +144,12 @@ npm run migration:run
 npm run migration:show
 ```
 
+Na imagem Docker (artefacto compilado em `dist/`), use:
+
+```bash
+npm run migration:run:prod
+```
+
 Reverter a última migração:
 
 ```bash

@@ -1,0 +1,44 @@
+# PostgreSQL dentro do cluster (StatefulSet + PVC) + stack base (API, frontend, Ingress).
+#
+# Antes de produção: altere as passwords no secretGenerator abaixo e mantenha o mesmo
+# valor em POSTGRES_PASSWORD e na password embutida em DATABASE_URL (URL-encoded se
+# tiver caracteres especiais). Prefira depois migrar para Sealed Secrets / External Secrets.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: voxscore
+
+resources:
+  - ../../base
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+
+secretGenerator:
+  - name: postgres-credentials
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - POSTGRES_USER=voxscore
+      - POSTGRES_PASSWORD=voxscore-in-k8s-change-me
+      - POSTGRES_DB=voxscore
+  - name: voxscore-api
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - DATABASE_URL=postgresql://voxscore:voxscore-in-k8s-change-me@postgres:5432/voxscore
+      - JWT_SECRET=k8s-with-postgres-change-me-use-at-least-32-chars
+      - GOOGLE_CLIENT_ID=configure-or-use-mock-in-configmap
+      - GOOGLE_CLIENT_SECRET=configure-or-use-mock-in-configmap
+      - GOOGLE_CALLBACK_URL=https://voxscore.example.com/api/v1/auth/google/callback
+      - OAUTH_FRONTEND_REDIRECT_URL=https://voxscore.example.com/oauth/callback
+
+patches:
+  - path: patch-deployment-api.yaml
+
+images:
+  - name: voxscore/api
+    newName: voxscore/api
+    newTag: latest
+  - name: voxscore/frontend
+    newName: voxscore/frontend
+    newTag: latest

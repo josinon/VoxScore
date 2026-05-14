@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: voxscore
+
+resources:
+  - ../../base
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+
+secretGenerator:
+  - name: voxscore-api
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - DATABASE_URL=postgresql://voxscore:voxscore@postgres:5432/voxscore
+      - JWT_SECRET=local-k8s-change-me-use-at-least-32-chars-long
+      - GOOGLE_CLIENT_ID=unused-with-mock
+      - GOOGLE_CLIENT_SECRET=unused-with-mock
+      - GOOGLE_CALLBACK_URL=https://voxscore.local/api/v1/auth/google/callback
+      - OAUTH_FRONTEND_REDIRECT_URL=https://voxscore.local/oauth/callback
+
+patches:
+  - path: patch-configmap-api.yaml
+  - path: patch-deployment-api.yaml
+  - path: patch-deployment-frontend.yaml
+  - path: patch-ingress.yaml
+
+images:
+  - name: voxscore/api
+    newName: voxscore/api
+    newTag: latest
+  - name: voxscore/frontend
+    newName: voxscore/frontend
+    newTag: latest
