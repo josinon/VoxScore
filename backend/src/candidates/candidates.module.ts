@@ -10,5 +10,6 @@ import { CandidatesService } from './candidates.service';
   imports: [TypeOrmModule.forFeature([Candidate]), AuthModule],
   controllers: [CandidatesController],
   providers: [CandidatesService, RolesGuard],
+  exports: [CandidatesService],
 })
 export class CandidatesModule {}

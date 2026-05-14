@@ -91,4 +91,15 @@ export class CandidatesService {
       throw new NotFoundException('Candidate not found');
     }
   }
+
+  /** Abre ou fecha a votação para um candidato. */
+  async setVotingOpen(id: string, open: boolean): Promise<CandidateResponseDto> {
+    const found = await this.candidates.findOne({ where: { id } });
+    if (!found) {
+      throw new NotFoundException('Candidate not found');
+    }
+    found.votingOpen = open;
+    const saved = await this.candidates.save(found);
+    return this.toResponse(saved);
+  }
 }

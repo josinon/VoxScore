@@ -151,14 +151,14 @@ Submissão de voto com **critérios por papel** (4 para `PUBLIC`, 5 para `JUDGE`
 | T5.1 | `PUBLIC`, candidato aberto, 4 critérios válidos → **201**; segundo POST mesmo par → **409** (ou código acordado de conflito). | e2e |
 | T5.2 | `PUBLIC` enviando 5 critérios (jurado) → **400**. | e2e |
 | T5.3 | `JUDGE` enviando 4 critérios → **400**. | e2e |
-| T5.4 | Candidato `votingOpen: false` → **403** ou **400** (documentado). | e2e |
+| T5.4 | Candidato `votingOpen: false` → **403** (documentado no README da API). | e2e |
 | T5.5 | `ADMIN` tenta votar → **403** (se essa for a regra fixada). | e2e |
 | T5.6 | Nota 0 ou 11 → **400**. | e2e |
 
 ### Definition of done
 
-- [ ] Matriz de erros documentada (tabela curta na doc da API).
-- [ ] T5.1–T5.6 verdes.
+- [x] Matriz de erros documentada (tabela curta na doc da API — [`backend/README.md`](./backend/README.md)).
+- [x] T5.1–T5.6 verdes — [`backend/test/voting.e2e-spec.ts`](./backend/test/voting.e2e-spec.ts).
 
 ---
 

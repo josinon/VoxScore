@@ -1,6 +1,6 @@
 # VoxScore — API (NestJS)
 
-Backend das Fases 1–4 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
+Backend das Fases 1–5 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos**, **votação por critérios** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
 
 ## Pré-requisitos
 
@@ -79,6 +79,26 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 - **`GET /api/v1/candidates/:id`** — detalhe; quem não é **ADMIN** obtém **404** se o candidato estiver inativo.
 - **`POST /api/v1/candidates`**, **`PATCH /api/v1/candidates/:id`**, **`DELETE /api/v1/candidates/:id`** — apenas **ADMIN** (`403` para outros papéis). `DELETE` responde **204** sem corpo.
 
+### Votação (Fase 5)
+
+- **`POST /api/v1/candidates/:id/votes`** — utilizador autenticado com papel **`PUBLIC`** ou **`JUDGE`**. Corpo JSON `{ "criteriaScores": { ... } }` com **exactamente** as chaves do papel e valores **inteiros de 1 a 10**.
+  - **`PUBLIC`** (4 chaves): `entertainment`, `emotion`, `likedTheMusic`, `wouldListenAgain`.
+  - **`JUDGE`** (5 chaves): `vocalTechnique`, `interpretation`, `stagePresence`, `originality`, `composition`.
+- **`PATCH /api/v1/candidates/:id/voting`** — apenas **ADMIN**; corpo `{ "open": boolean }` para abrir ou fechar a votação desse candidato (equivalente semântico a atualizar `votingOpen`).
+
+#### Matriz de erros (votação)
+
+| Situação | HTTP |
+|----------|--------|
+| Token em falta ou inválido | **401** |
+| **`ADMIN`** submete voto | **403** |
+| Candidato inexistente, inativo, ou detalhe negado a não-ADMIN | **404** (submissão de voto usa a mesma regra de “não encontrado” para inativo) |
+| **`votingOpen === false`** | **403** |
+| Utilizador desativado | **403** |
+| Chaves de `criteriaScores` erradas para o papel (número ou nomes) | **400** |
+| Nota não inteira ou fora de **1–10** | **400** |
+| Segundo voto do mesmo utilizador no mesmo candidato | **409** |
+
 ### Documentação OpenAPI
 
 - Se **`SWAGGER_ENABLED`** não for `false`, a UI Swagger fica em **`http://localhost:<PORT>/api/v1/docs`** (botão **Authorize** para JWT Bearer).
@@ -119,7 +139,7 @@ Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/hea
 |--------|-----------|
 | `npm run test` | Testes unitários (Jest) |
 | `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
-| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)** — exige `DATABASE_URL`, migrações e env conforme CI |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)** — exige `DATABASE_URL`, migrações e env conforme CI |
 
 Ordem sugerida com base de dados vazia:
 
