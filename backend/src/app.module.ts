@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { CandidatesModule } from './candidates/candidates.module';
 import { VotingModule } from './voting/voting.module';
+import { RankingModule } from './ranking/ranking.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { VotingModule } from './voting/voting.module';
     UsersModule,
     CandidatesModule,
     VotingModule,
+    RankingModule,
   ],
 })
 export class AppModule {}

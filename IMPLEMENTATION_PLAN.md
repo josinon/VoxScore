@@ -179,12 +179,12 @@ Endpoint **`GET /ranking`** autenticado retorna leaderboard **determinístico**,
 |----|-----------|------|
 | T6.1 | Fixture com N votos públicos e M votos jurados: score final coincide com valor esperado calculado offline (planilha ou teste dourado). | Unitário |
 | T6.2 | Candidato sem votos de um dos grupos: comportamento documentado (ex.: só média do grupo existente ou zero ponderado — **deve** estar especificado e testado). | Unitário |
-| T6.3 | `GET /ranking` sem auth → **401**; com `PUBLIC` → **200**. | e2e |
+| T6.3 | `GET /api/v1/ranking` sem auth → **401**; com `PUBLIC` → **200**. | e2e |
 
 ### Definition of done
 
-- [ ] Fórmula 60/40 referenciada no código (comentário ou doc) e reproduzível.
-- [ ] T6.1–T6.3 verdes.
+- [x] Fórmula 60/40 referenciada no código (comentário ou doc) e reproduzível — [`backend/src/ranking/ranking-formula.ts`](./backend/src/ranking/ranking-formula.ts), [`backend/README.md`](./backend/README.md) §Ranking.
+- [x] T6.1–T6.3 verdes — unitário [`backend/src/ranking/ranking-formula.spec.ts`](./backend/src/ranking/ranking-formula.spec.ts); e2e [`backend/test/ranking.e2e-spec.ts`](./backend/test/ranking.e2e-spec.ts).
 
 ---
 

@@ -1,6 +1,6 @@
 # VoxScore — API (NestJS)
 
-Backend das Fases 1–5 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos**, **votação por critérios** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
+Backend das Fases 1–6 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos**, **votação por critérios**, **ranking 60/40** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
 
 ## Pré-requisitos
 
@@ -99,6 +99,13 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 | Nota não inteira ou fora de **1–10** | **400** |
 | Segundo voto do mesmo utilizador no mesmo candidato | **409** |
 
+### Ranking (Fase 6)
+
+- **`GET /api/v1/ranking`** — qualquer utilizador autenticado (`PUBLIC`, `JUDGE`, `ADMIN`). Resposta `{ "schemaVersion": 1, "entries": [ ... ] }` (contrato versionado; incrementar `schemaVersion` só com mudanças documentadas).
+- Inclui **apenas candidatos com `active: true`**, ordenados no leaderboard por `finalScore` (desc.), depois nome e id (empates no mesmo `rank` estilo competição).
+- **Fórmula** (alinhada ao [README do produto](../README.md) §5): para cada votante, calcula-se a **média dos critérios** desse voto (4 ou 5 notas); depois a **média dessas médias** por grupo (**jurados** / **público**). Com **os dois grupos** com votos: `finalScore = 0.6 * média_jurados + 0.4 * média_público`. Com **só um grupo**: `finalScore` é a média desse grupo (o outro não entra como zero). **Sem votos**: `finalScore = 0`. Implementação e constantes: [`src/ranking/ranking-formula.ts`](./src/ranking/ranking-formula.ts).
+- Cada entrada inclui médias por critério (`judgeCriteriaAverages` / `publicCriteriaAverages`) quando existirem votos nesse grupo, e `judgeCompositeAverage` / `publicCompositeAverage` (média das médias por voto). Valores numéricos arredondados a **4 casas decimais** no servidor.
+
 ### Documentação OpenAPI
 
 - Se **`SWAGGER_ENABLED`** não for `false`, a UI Swagger fica em **`http://localhost:<PORT>/api/v1/docs`** (botão **Authorize** para JWT Bearer).
@@ -137,9 +144,9 @@ Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/hea
 
 | Script | Descrição |
 |--------|-----------|
-| `npm run test` | Testes unitários (Jest) |
+| `npm run test` | Testes unitários (Jest), incl. **T6.1–T6.2** (`ranking-formula.spec.ts`) |
 | `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
-| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)** — exige `DATABASE_URL`, migrações e env conforme CI |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)**, **T6.3 (ranking)** — exige `DATABASE_URL`, migrações e env conforme CI |
 
 Ordem sugerida com base de dados vazia:
 
