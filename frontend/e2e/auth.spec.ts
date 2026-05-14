@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { installMinimalVoterApiStubs } from './minimal-voter-api-stubs';
 
 const meBody = (role: 'PUBLIC' | 'JUDGE' | 'ADMIN') =>
   JSON.stringify({
@@ -26,6 +27,7 @@ async function installApiMocks(page: Page, role: 'PUBLIC' | 'JUDGE' | 'ADMIN') {
       body: meBody(role),
     });
   });
+  await installMinimalVoterApiStubs(page);
 }
 
 test.describe('Autenticação e rotas protegidas', () => {
@@ -48,6 +50,7 @@ test.describe('Autenticação e rotas protegidas', () => {
         body: meBody('PUBLIC'),
       });
     });
+    await installMinimalVoterApiStubs(page);
 
     await page.goto('/login');
     await page.getByTestId('dev-login-submit').click();
