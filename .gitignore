@@ -1,2 +1,6 @@
-mobile/node_modules
-mobile/.env
+backend/node_modules
+backend/dist
+backend/.env
+frontend/.env
+frontend/node_modules
+.env

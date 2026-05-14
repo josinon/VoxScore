@@ -1,0 +1,126 @@
+# VoxScore — API (NestJS)
+
+Backend das Fases 1–3 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (com **mock** em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, endpoint `POST /auth/dev/token` apenas quando explicitamente ativado.
+
+## Pré-requisitos
+
+- Node.js 20+ (CI usa 22)
+- Docker (opcional, para PostgreSQL local)
+
+## PostgreSQL local
+
+Na raiz do repositório:
+
+```bash
+docker compose up -d postgres pgadmin
+```
+
+- **PostgreSQL**: `localhost:5432` (utilizador `voxscore`, palavra-passe `voxscore`, base `voxscore`).
+- **pgAdmin (web)**: [http://localhost:5050](http://localhost:5050) — email `admin@voxscore.local`, palavra-passe `admin` (apenas desenvolvimento).
+
+No pgAdmin, registe um servidor com **Host** `postgres` (nome do serviço na rede Docker), **Port** `5432`, **Username** / **Password** iguais às variáveis do Postgres acima, **Maintenance database** `voxscore`.
+
+No diretório `backend/`, copie variáveis de ambiente e ajuste se necessário:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+O ficheiro [`.env.example`](./.env.example) documenta `DATABASE_URL`, `JWT_SECRET`, OAuth Google, mock OAuth, CORS, bootstrap do admin e `AUTH_DEV_TOKEN_ENABLED`.
+
+## Primeiro administrador (Fase 2)
+
+- No **primeiro arranque** da API, se **não existir nenhum** utilizador com `role = ADMIN`, é criado automaticamente um admin com:
+  - `BOOTSTRAP_ADMIN_EMAIL` (predefinição: `admin@voxscore.local`)
+  - `BOOTSTRAP_ADMIN_DISPLAY_NAME` (predefinição: `Administrator`)
+- Se já existir **pelo menos um** `ADMIN`, o seed **não** cria nem altera utilizadores.
+- O email de bootstrap tem de ser **livre** (constraint única em `users.email`); se já existir um registo com esse email e papel não-ADMIN, a criação falhará — nesse caso altere `BOOTSTRAP_ADMIN_EMAIL` ou limpe dados de desenvolvimento.
+
+## Autenticação (Fase 3)
+
+### JWT
+
+- **`JWT_SECRET`** (obrigatório): segredo de assinatura; **nunca** em repositório público em produção. Rotação: emitir novo segredo, fazer deploy com overlap curto se necessário, invalidar tokens antigos (sem refresh token nesta fase, os clientes voltam a autenticar).
+- **`JWT_EXPIRES_IN`**: tempo de vida do access token (predefinição `15m`, formato aceite pelo pacote `jsonwebtoken` / Nest JWT).
+
+### OAuth Google (produção / staging)
+
+1. Criar credenciais OAuth 2.0 (tipo *Web application*) na [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. **Authorized redirect URIs** deve incluir o valor exacto de **`GOOGLE_CALLBACK_URL`** (ex.: `http://localhost:3000/api/v1/auth/google/callback` em desenvolvimento com a API em `localhost:3000`).
+3. Definir no `.env`:
+   - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_CALLBACK_URL`
+   - Opcional: **`OAUTH_FRONTEND_REDIRECT_URL`** — URL do SPA para onde o utilizador é enviado após login com **`#access_token=<JWT>`** no fragmento (o fragmento não é envido ao servidor nas navegações seguintes). Se **omitir**, o callback devolve **JSON** `{ "accessToken": "..." }` (útil para testes com `curl`).
+4. Fluxo browser: **`GET /api/v1/auth/google`** → Google → **`GET /api/v1/auth/google/callback`** → redirect ou JSON conforme acima.
+
+Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o callback respondem **404** (OAuth desligado).
+
+### Mock OAuth (desenvolvimento e CI)
+
+- **`POST /api/v1/auth/oauth/mock`** — corpo JSON `{ "email": "user@example.com", "displayName"?: "...", "photoUrl"?: "https://..." }`. Resposta `{ "accessToken": "..." }`.
+- Só funciona com **`AUTH_GOOGLE_MOCK_ENABLED=true`**; caso contrário **404**. **Proibido** em produção.
+- Primeiro email cria utilizador com **`role: PUBLIC`**; logins seguintes reutilizam o mesmo registo.
+
+### Token de desenvolvimento (Fase 2, legado)
+
+- **`POST /api/v1/auth/dev/token`** — corpo `{ "email": "..." }` para um utilizador **já existente**. Só com **`AUTH_DEV_TOKEN_ENABLED=true`**; caso contrário **404**. **Proibido** em produção.
+
+### CORS
+
+- **`CORS_ORIGINS`**: lista separada por vírgulas (ex.: `http://localhost:5173,http://127.0.0.1:5173`). Com valor definido, a API usa `credentials: true` e origem restrita a esses hosts. **Sem** variável, aplica-se política permissiva típica de desenvolvimento (ajustar antes de produção).
+
+### Rotas protegidas
+
+- **`GET /api/v1/users/me`** — `Authorization: Bearer <JWT>`.
+
+### Verificação manual (T3.4)
+
+Com credenciais Google reais e `OAUTH_FRONTEND_REDIRECT_URL` apontando para o SPA de staging, concluir login no browser e confirmar que `GET /users/me` devolve o perfil esperado.
+
+## Migrações
+
+Por defeito a API aplica migrações pendentes ao **arrancar** (`TYPEORM_MIGRATIONS_RUN` omitido ou `true`), para que `npm run start:dev` funcione sem correr `migration:run` antes. Defina `TYPEORM_MIGRATIONS_RUN=false` em Kubernetes com várias réplicas e use um **Job** para migrar (ver [`deploy/kubernetes/README.md`](../deploy/kubernetes/README.md)).
+
+```bash
+npm run migration:run
+npm run migration:show
+```
+
+Reverter a última migração:
+
+```bash
+npm run migration:revert
+```
+
+## Executar a API
+
+```bash
+npm run start:dev
+```
+
+- Prefixo global: **`/api/v1`**
+- Health (readiness com ping ao Postgres): **`GET /api/v1/health`** — responde **200** com `status: "ok"` e `info.database.status: "up"` quando o banco está acessível.
+
+Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/health`** como readiness/liveness após o Postgres estar pronto. Guia de cluster: [`deploy/kubernetes/README.md`](../deploy/kubernetes/README.md).
+
+## Testes (Fases 1 e 2)
+
+| Script | Descrição |
+|--------|-----------|
+| `npm run test` | Testes unitários (Jest) |
+| `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3 (`/users/me`, token dev), T3.1–T3.3 (mock OAuth, JWT) — exige `DATABASE_URL`, migrações aplicadas e variáveis JWT (no CI vêm do workflow) |
+
+Ordem sugerida com base de dados vazia:
+
+```bash
+npm run migration:run
+npm run test:integration
+npm run test:e2e
+```
+
+Sem `DATABASE_URL`, os testes de integração e e2e são **ignorados** (`describe.skip`) para não falharem em ambientes sem Postgres.
+
+## CI
+
+O workflow [`.github/workflows/backend-ci.yml`](../.github/workflows/backend-ci.yml) executa `migration:run`, testes e `build` contra PostgreSQL em serviço.

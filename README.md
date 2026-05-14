@@ -76,3 +76,9 @@ Avaliação por **4 critérios de preferência**:
 ## 7. Fluxo completo
 
 Login → Seleção de perfil → Votação (conforme liberação do admin) → Ranking
+
+## Desenvolvimento e implantação
+
+- Especificação técnica: [DEVSPEC.md](./DEVSPEC.md) (inclui **Kubernetes** para API e frontend, §5.1).
+- Plano por fases: [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md).
+- Guia de cluster: [deploy/kubernetes/README.md](./deploy/kubernetes/README.md).

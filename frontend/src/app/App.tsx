@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Login } from './components/Login';
 import { UserTypeSelection } from './components/UserTypeSelection';
-import { AdminPanel } from './components/AdminPanel';
+import { AdminDashboard } from './components/admin/AdminDashboard';
 import { VotingHeader } from './components/VotingHeader';
 import { ArtistCard } from './components/ArtistCard';
 import { ArtistDetails } from './components/ArtistDetails';
@@ -67,7 +67,7 @@ const PUBLIC_CRITERIA: Criterion[] = [
   }
 ];
 
-const mockArtists: Artist[] = [
+const initialArtists: Artist[] = [
   {
     id: 1,
     name: 'Luna Santos',
@@ -143,6 +143,7 @@ const mockArtists: Artist[] = [
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [userType, setUserType] = useState<'judge' | 'public' | 'admin' | null>(null);
+  const [artists, setArtists] = useState<Artist[]>(initialArtists);
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [votingArtist, setVotingArtist] = useState<Artist | null>(null);
   const [votes, setVotes] = useState<Vote[]>([]);
@@ -183,11 +184,29 @@ export default function App() {
     );
   };
 
+  const handleAddArtist = (artistData: Omit<Artist, 'id'>) => {
+    const newId = Math.max(...artists.map(a => a.id), 0) + 1;
+    const newArtist: Artist = { ...artistData, id: newId };
+    setArtists(prev => [...prev, newArtist]);
+  };
+
+  const handleUpdateArtist = (id: number, artistData: Omit<Artist, 'id'>) => {
+    setArtists(prev =>
+      prev.map(artist => (artist.id === id ? { ...artistData, id } : artist))
+    );
+  };
+
+  const handleDeleteArtist = (id: number) => {
+    setArtists(prev => prev.filter(artist => artist.id !== id));
+    setOpenArtistIds(prev => prev.filter(artistId => artistId !== id));
+    setVotes(prev => prev.filter(vote => vote.artistId !== id));
+  };
+
   const handleVote = (artistId: number) => {
     if (votedArtistIds.includes(artistId)) return;
     if (!openArtistIds.includes(artistId)) return;
 
-    const artist = mockArtists.find(a => a.id === artistId);
+    const artist = artists.find(a => a.id === artistId);
     if (artist) {
       setVotingArtist(artist);
     }
@@ -205,7 +224,7 @@ export default function App() {
 
     setVotes(prev => [...prev, newVote]);
 
-    const artist = mockArtists.find(a => a.id === artistId);
+    const artist = artists.find(a => a.id === artistId);
     if (artist) {
       setConfirmedArtistName(artist.name);
       setShowConfirmation(true);
@@ -215,7 +234,7 @@ export default function App() {
   };
 
   const handleViewDetails = (artistId: number) => {
-    const artist = mockArtists.find(a => a.id === artistId);
+    const artist = artists.find(a => a.id === artistId);
     if (artist) {
       setSelectedArtist(artist);
     }
@@ -226,7 +245,7 @@ export default function App() {
   };
 
   const rankings: ArtistScore[] = useMemo(() => {
-    const artistScores = mockArtists.map(artist => {
+    const artistScores = artists.map(artist => {
       const judgeVotesForArtist = votes.filter(
         v => v.artistId === artist.id && v.userType === 'judge'
       );
@@ -264,7 +283,7 @@ export default function App() {
     });
 
     return artistScores.sort((a, b) => b.totalScore - a.totalScore);
-  }, [votes]);
+  }, [votes, artists]);
 
   if (!user) {
     return <Login onLogin={handleLogin} />;
@@ -291,10 +310,13 @@ export default function App() {
     }
 
     return (
-      <AdminPanel
-        artists={mockArtists}
+      <AdminDashboard
+        artists={artists}
         openArtistIds={openArtistIds}
         onToggleArtist={handleToggleArtist}
+        onAddArtist={handleAddArtist}
+        onUpdateArtist={handleUpdateArtist}
+        onDeleteArtist={handleDeleteArtist}
         onShowRanking={() => setShowRanking(true)}
         user={user}
         onLogout={handleLogout}
@@ -349,18 +371,24 @@ export default function App() {
           )}
         </div>
 
-        <div className="grid gap-4 mb-8">
-          {mockArtists.map((artist) => (
-            <ArtistCard
-              key={artist.id}
-              {...artist}
-              hasVoted={votedArtistIds.includes(artist.id)}
-              isOpen={openArtistIds.includes(artist.id)}
-              onVote={handleVote}
-              onViewDetails={handleViewDetails}
-            />
-          ))}
-        </div>
+        {artists.length === 0 ? (
+          <div className="bg-white rounded-xl p-12 text-center mb-8">
+            <p className="text-gray-500">Nenhum candidato cadastrado. Aguarde o administrador adicionar candidatos.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4 mb-8">
+            {artists.map((artist) => (
+              <ArtistCard
+                key={artist.id}
+                {...artist}
+                hasVoted={votedArtistIds.includes(artist.id)}
+                isOpen={openArtistIds.includes(artist.id)}
+                onVote={handleVote}
+                onViewDetails={handleViewDetails}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl p-6 mb-6">
           <h3 className="text-xl font-bold mb-2">Como Funciona?</h3>
