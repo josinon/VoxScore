@@ -38,21 +38,33 @@ export class CreateCandidateDto {
   bio!: string;
 
   @ApiProperty({ example: 'https://example.com/photo.jpg' })
-  @IsUrl({ protocols: ['http', 'https'], require_tld: false })
+  @IsUrl({
+    protocols: ['http', 'https'],
+    require_tld: false,
+    require_protocol: true,
+  })
   @MaxLength(2048)
   photoUrl!: string;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @ValidateIf((_, v: unknown) => v != null && v !== '')
-  @IsUrl({ protocols: ['http', 'https'], require_tld: false })
+  @IsUrl({
+    protocols: ['http', 'https'],
+    require_tld: false,
+    require_protocol: true,
+  })
   @MaxLength(2048)
   instagramUrl?: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @ValidateIf((_, v: unknown) => v != null && v !== '')
-  @IsUrl({ protocols: ['http', 'https'], require_tld: false })
+  @IsUrl({
+    protocols: ['http', 'https'],
+    require_tld: false,
+    require_protocol: true,
+  })
   @MaxLength(2048)
   youtubeUrl?: string | null;
 
