@@ -17,12 +17,18 @@ interface Artist {
 interface CriteriaVotingProps {
   artist: Artist;
   criteria: Criterion[];
-  userType: 'judge' | 'public';
+  voterRole: 'JUDGE' | 'PUBLIC';
   onSubmitVote: (artistId: number, scores: Record<string, number>) => void;
   onBack: () => void;
 }
 
-export function CriteriaVoting({ artist, criteria, userType, onSubmitVote, onBack }: CriteriaVotingProps) {
+export function CriteriaVoting({
+  artist,
+  criteria,
+  voterRole,
+  onSubmitVote,
+  onBack,
+}: CriteriaVotingProps) {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [hoveredScore, setHoveredScore] = useState<{ criterionId: string; score: number } | null>(null);
 
@@ -59,7 +65,7 @@ export function CriteriaVoting({ artist, criteria, userType, onSubmitVote, onBac
               <h1 className="text-xl font-bold">{artist.name}</h1>
               <p className="text-sm text-white/90">{artist.song}</p>
               <p className="text-xs text-white/70 mt-1">
-                {userType === 'judge' ? 'Avaliação de Jurado' : 'Avaliação do Público'}
+                {voterRole === 'JUDGE' ? 'Avaliação de Jurado' : 'Avaliação do Público'}
               </p>
             </div>
           </div>

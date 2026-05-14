@@ -204,14 +204,14 @@ A SPA em **`frontend/`** obtém token/sessão, chama **`GET /users/me`**, persis
 
 | ID | Descrição | Tipo |
 |----|-----------|------|
-| T7.1 | (Manual ou Playwright) Login; `/users/me` é chamado; UI reflete `role`. | E2E UI ou manual |
-| T7.2 | Usuário `PUBLIC` navega para URL admin digitada → bloqueio (redirect 403/forbidden view). | E2E UI ou manual |
-| T7.3 | Logout limpa sessão; refresh não mantém área privada sem novo login. | E2E UI ou manual |
+| T7.1 | Login; `GET /api/v1/users/me` é chamado; UI reflete `role` — Playwright [`frontend/e2e/auth.spec.ts`](./frontend/e2e/auth.spec.ts). | e2e |
+| T7.2 | `PUBLIC` navega para `/admin` → redirecionamento para página de acesso negado. | e2e |
+| T7.3 | Logout limpa `sessionStorage`; refresh em `/login`; `/votacao` sem sessão → `/login`. | e2e |
 
 ### Definition of done
 
-- [ ] `.env.example` no frontend com variáveis necessárias.
-- [ ] T7.1–T7.3 verdes.
+- [x] `.env.example` no frontend com variáveis necessárias — [`frontend/.env.example`](./frontend/.env.example).
+- [x] T7.1–T7.3 verdes — `npm run test:e2e` em [`frontend/`](./frontend/) (Playwright).
 
 ---
 

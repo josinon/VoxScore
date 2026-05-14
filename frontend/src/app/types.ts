@@ -20,7 +20,7 @@ export interface Criterion {
 export interface Vote {
   artistId: number;
   scores: Record<string, number>;
-  userType: 'judge' | 'public';
+  voterRole: 'JUDGE' | 'PUBLIC';
   timestamp: number;
 }
 

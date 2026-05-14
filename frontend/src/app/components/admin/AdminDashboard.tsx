@@ -66,7 +66,7 @@ export function AdminDashboard({
                 <TrendingUp className="w-5 h-5" />
                 <span className="hidden sm:inline">Ranking</span>
               </button>
-              <UserMenu user={user} onLogout={onLogout} />
+              <UserMenu user={user} roleLabel="Administrador" onLogout={onLogout} />
             </div>
           </div>
 
