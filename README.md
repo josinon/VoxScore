@@ -56,7 +56,7 @@ Candidatos geridos pelo **administrador** na API (nome, música, género, foto, 
 
 ## 5. Ranking
 
-- Pontuação ponderada: **60% jurados + 40% público**
+- Pontuação ponderada: **80% jurados + 20% público**
 - Visualização em tempo real
 - Pódio visual (troféus para top 3)
 - Detalhamento de votos por categoria

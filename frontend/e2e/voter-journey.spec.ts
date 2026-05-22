@@ -225,6 +225,48 @@ test.describe('Jornada do eleitor (API mock)', () => {
     );
   });
 
+  test('ranking oculto mostra só contagem de avaliações', async ({ page }) => {
+    await installAuthMocks(page);
+    await installCandidatesMock(page);
+    await page.route('**/api/v1/ranking', async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schemaVersion: 1,
+          resultsPublished: false,
+          entries: [
+            {
+              rank: 0,
+              candidateId: CANDIDATE_ID,
+              candidateName: 'Artista Playwright',
+              voteCount: 7,
+              judgeCompositeAverage: null,
+              publicCompositeAverage: null,
+              finalScore: null,
+              judgeCriteriaAverages: null,
+              publicCriteriaAverages: null,
+            },
+          ],
+        }),
+      });
+    });
+
+    await loginAsPublic(page);
+    await page.getByTestId('open-ranking-btn').click();
+    await expect(page.getByTestId('ranking-awaiting-results')).toBeVisible();
+    await expect(page.getByTestId(`ranking-vote-count-${CANDIDATE_ID}`)).toHaveText(
+      '7',
+    );
+    await expect(page.getByTestId(`ranking-row-${CANDIDATE_ID}`)).not.toContainText(
+      'pontos',
+    );
+  });
+
   test('ranking mostra três entradas e atualiza ao reabrir', async ({ page }) => {
     const id1 = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
     const id2 = 'dddddddd-dddd-dddd-dddd-dddddddddddd';
@@ -233,11 +275,13 @@ test.describe('Jornada do eleitor (API mock)', () => {
     let rankingGets = 0;
     const rankingFirst = {
       schemaVersion: 1 as const,
+      resultsPublished: true,
       entries: [
         {
           rank: 1,
           candidateId: id1,
           candidateName: 'Alice',
+          voteCount: 5,
           judgeCompositeAverage: 8,
           publicCompositeAverage: 7,
           finalScore: 7.6,
@@ -248,6 +292,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
           rank: 2,
           candidateId: id2,
           candidateName: 'Bob',
+          voteCount: 3,
           judgeCompositeAverage: 7,
           publicCompositeAverage: 6,
           finalScore: 6.6,
@@ -258,6 +303,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
           rank: 3,
           candidateId: id3,
           candidateName: 'Carol',
+          voteCount: 2,
           judgeCompositeAverage: 6,
           publicCompositeAverage: 5,
           finalScore: 5.6,
@@ -268,11 +314,13 @@ test.describe('Jornada do eleitor (API mock)', () => {
     };
     const rankingSecond = {
       schemaVersion: 1 as const,
+      resultsPublished: true,
       entries: [
         {
           rank: 1,
           candidateId: id3,
           candidateName: 'Carol',
+          voteCount: 10,
           judgeCompositeAverage: 9,
           publicCompositeAverage: 9,
           finalScore: 9,
@@ -283,6 +331,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
           rank: 2,
           candidateId: id1,
           candidateName: 'Alice',
+          voteCount: 5,
           judgeCompositeAverage: 8,
           publicCompositeAverage: 7,
           finalScore: 7.6,
@@ -293,6 +342,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
           rank: 3,
           candidateId: id2,
           candidateName: 'Bob',
+          voteCount: 3,
           judgeCompositeAverage: 7,
           publicCompositeAverage: 6,
           finalScore: 6.6,

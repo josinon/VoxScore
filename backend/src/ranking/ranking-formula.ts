@@ -6,12 +6,12 @@ import {
 
 /**
  * Ponderação do ranking (README §5 — Megadance 2026; DEVSPEC §4.2 `RankingModule`).
- * Score final com **os dois grupos**: `0.6 * média_jurados + 0.4 * média_público`.
+ * Score final com **os dois grupos**: `0.8 * média_jurados + 0.2 * média_público`.
  */
-export const RANKING_JUDGE_WEIGHT = 0.6;
+export const RANKING_JUDGE_WEIGHT = 0.8;
 
 /** Complemento de {@link RANKING_JUDGE_WEIGHT} (jurados + público = 100%). */
-export const RANKING_PUBLIC_WEIGHT = 0.4;
+export const RANKING_PUBLIC_WEIGHT = 0.2;
 
 export interface RankingCandidateInput {
   id: string;

@@ -110,15 +110,17 @@ export type RankingEntryDto = {
   rank: number;
   candidateId: string;
   candidateName: string;
+  voteCount: number;
   judgeCompositeAverage: number | null;
   publicCompositeAverage: number | null;
-  finalScore: number;
+  finalScore: number | null;
   judgeCriteriaAverages: Record<string, number> | null;
   publicCriteriaAverages: Record<string, number> | null;
 };
 
 export type RankingResponseDto = {
   schemaVersion: 1;
+  resultsPublished: boolean;
   entries: RankingEntryDto[];
 };
 
@@ -166,6 +168,20 @@ export async function fetchRanking(): Promise<RankingResponseDto> {
     throw new ApiError(await safeErrorBody(res), res.status);
   }
   return (await res.json()) as RankingResponseDto;
+}
+
+export async function setRankingPublished(
+  published: boolean,
+): Promise<{ published: boolean }> {
+  const res = await apiFetch('/ranking/publish', {
+    method: 'PATCH',
+    body: JSON.stringify({ published }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as { published: boolean };
 }
 
 export async function fetchUsers(): Promise<MeResponse[]> {

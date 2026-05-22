@@ -108,6 +108,7 @@ export function MegadanceVoterApp() {
   const [rankingRows, setRankingRows] = useState<RankingRow[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState<string | null>(null);
+  const [resultsPublished, setResultsPublished] = useState(false);
 
   const showRankingRef = useRef(false);
   showRankingRef.current = showRanking;
@@ -171,7 +172,10 @@ export function MegadanceVoterApp() {
     setRankingLoading(true);
     try {
       const res = await fetchRanking();
-      setRankingRows(mapRankingEntriesToRows(res.entries, candidates));
+      setResultsPublished(res.resultsPublished);
+      setRankingRows(
+        mapRankingEntriesToRows(res.entries, candidates, res.resultsPublished),
+      );
       setRankingError(null);
     } catch (e) {
       const msg =
@@ -189,6 +193,16 @@ export function MegadanceVoterApp() {
       return;
     }
     void loadRanking();
+  }, [showRanking, loadRanking]);
+
+  useEffect(() => {
+    if (!showRanking || isRealtimeEnabled()) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      void loadRanking();
+    }, 8000);
+    return () => window.clearInterval(id);
   }, [showRanking, loadRanking]);
 
   useEffect(() => {
@@ -305,6 +319,7 @@ export function MegadanceVoterApp() {
     return (
       <Ranking
         rankings={rankingRows}
+        resultsPublished={resultsPublished}
         onClose={() => setShowRanking(false)}
         loading={rankingLoading}
         error={rankingError}
@@ -424,7 +439,10 @@ export function MegadanceVoterApp() {
             </li>
             <li className="flex items-start gap-2">
               <span className="font-bold">5.</span>
-              <span>Veja o ranking clicando no botão no topo da página</span>
+              <span>
+                Veja quantas avaliações cada artista recebeu no ranking; as notas
+                só aparecem quando o administrador publicar os resultados
+              </span>
             </li>
           </ul>
         </div>

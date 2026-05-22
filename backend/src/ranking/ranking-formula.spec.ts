@@ -22,8 +22,8 @@ const publicAll = (n: number) => ({
 });
 
 describe('ranking-formula (Fase 6)', () => {
-  describe('T6.1 — fixture dourada 60/40', () => {
-    it('N votos públicos e M jurados: score final = 0.6*j + 0.4*p', () => {
+  describe('T6.1 — fixture dourada 80/20', () => {
+    it('N votos públicos e M jurados: score final = 0.8*j + 0.2*p', () => {
       const candidate = { id: 'c-golden', name: 'Golden' };
       const votes = [
         {
@@ -59,7 +59,7 @@ describe('ranking-formula (Fase 6)', () => {
       const expected =
         RANKING_JUDGE_WEIGHT * 7 + RANKING_PUBLIC_WEIGHT * 8;
       expect(row.finalScore).toBe(roundScore4(expected));
-      expect(row.finalScore).toBeCloseTo(7.4, 10);
+      expect(row.finalScore).toBeCloseTo(7.2, 10);
     });
   });
 

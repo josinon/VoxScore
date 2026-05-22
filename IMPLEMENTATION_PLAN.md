@@ -162,7 +162,7 @@ Submissão de voto com **critérios por papel** (4 para `PUBLIC`, 5 para `JUDGE`
 
 ---
 
-## Fase 6 — Ranking (ponderação 60% jurados / 40% público)
+## Fase 6 — Ranking (ponderação 80% jurados / 20% público)
 
 ### Objetivo de implementação
 
@@ -183,7 +183,7 @@ Endpoint **`GET /ranking`** autenticado retorna leaderboard **determinístico**,
 
 ### Definition of done
 
-- [x] Fórmula 60/40 referenciada no código (comentário ou doc) e reproduzível — [`backend/src/ranking/ranking-formula.ts`](./backend/src/ranking/ranking-formula.ts), [`backend/README.md`](./backend/README.md) §Ranking.
+- [x] Fórmula 80/20 referenciada no código (comentário ou doc) e reproduzível — [`backend/src/ranking/ranking-formula.ts`](./backend/src/ranking/ranking-formula.ts), [`backend/README.md`](./backend/README.md) §Ranking.
 - [x] T6.1–T6.3 verdes — unitário [`backend/src/ranking/ranking-formula.spec.ts`](./backend/src/ranking/ranking-formula.spec.ts); e2e [`backend/test/ranking.e2e-spec.ts`](./backend/test/ranking.e2e-spec.ts).
 
 ---
@@ -305,7 +305,7 @@ Sistema **pronto para demonstração** ou deploy inicial: rate limit nas rotas s
 | Cadastro/login Google, usuário `PUBLIC` por padrão | 3, 7 |
 | Admin gerencia candidatos e abre/fecha votação | 4, 9 |
 | Voto com critérios por papel; servidor rejeita inválidos | 5, 8 |
-| Ranking 60/40 para todos autenticados | 6, 8 |
+| Ranking 80/20 para todos autenticados | 6, 8 |
 | Admin altera `role` | 4 (API users), 9 |
 
 ---

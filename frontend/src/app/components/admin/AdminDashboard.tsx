@@ -32,6 +32,9 @@ interface AdminDashboardProps {
     id: string,
     body: { role?: UserRole; disabled?: boolean },
   ) => void | Promise<void>;
+  resultsPublished: boolean;
+  publishLoading: boolean;
+  onSetResultsPublished: (published: boolean) => void | Promise<void>;
 }
 
 type TabType = 'overview' | 'candidates' | 'users' | 'voting';
@@ -54,6 +57,9 @@ export function AdminDashboard({
   usersError,
   onLoadUsers,
   onPatchUser,
+  resultsPublished,
+  publishLoading,
+  onSetResultsPublished,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
@@ -202,7 +208,8 @@ export function AdminDashboard({
                   área do eleitor em tempo real).
                 </p>
                 <p>
-                  ✓ <strong>Ranking:</strong> dados do servidor (GET /ranking).
+                  ✓ <strong>Ranking:</strong> publicar resultados quando quiser revelar notas e
+                  vencedores ao público.
                 </p>
               </div>
             </div>
@@ -257,6 +264,9 @@ export function AdminDashboard({
             openArtistIds={openArtistIds}
             onToggleArtist={onToggleArtist}
             listLoading={listLoading}
+            resultsPublished={resultsPublished}
+            publishLoading={publishLoading}
+            onSetResultsPublished={onSetResultsPublished}
           />
         )}
       </main>

@@ -1,22 +1,36 @@
-import { Trophy, Medal, Award, TrendingUp, Users } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Users, Eye } from 'lucide-react';
 import type { RankingRow } from '../types';
 
 interface RankingProps {
   rankings: RankingRow[];
+  resultsPublished: boolean;
   onClose: () => void;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
+  /** ADMIN: indica se o evento está publicado para o público (pode ver notas antes). */
+  adminPreview?: boolean;
 }
 
 export function Ranking({
   rankings,
+  resultsPublished,
   onClose,
   loading = false,
   error = null,
   onRetry,
+  adminPreview = false,
 }: RankingProps) {
+  const showScores = resultsPublished || adminPreview;
+
   const getRankIcon = (rank: number) => {
+    if (!showScores || rank < 1) {
+      return (
+        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+          <Users className="w-4 h-4 text-purple-600" />
+        </div>
+      );
+    }
     switch (rank) {
       case 1:
         return <Trophy className="w-8 h-8 text-yellow-500" />;
@@ -34,6 +48,9 @@ export function Ranking({
   };
 
   const getRankBgColor = (podiumSlot: number) => {
+    if (!showScores) {
+      return 'bg-white border-gray-200';
+    }
     switch (podiumSlot) {
       case 1:
         return 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200';
@@ -46,6 +63,15 @@ export function Ranking({
     }
   };
 
+  const sortedForDisplay = showScores
+    ? rankings
+    : [...rankings].sort((a, b) => {
+        if (b.voteCount !== a.voteCount) {
+          return b.voteCount - a.voteCount;
+        }
+        return a.name.localeCompare(b.name);
+      });
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 shadow-lg z-10">
@@ -56,7 +82,9 @@ export function Ranking({
                 <TrendingUp className="w-6 h-6" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Ranking Geral</h1>
+                <h1 className="text-2xl font-bold">
+                  {showScores ? 'Ranking Geral' : 'Avaliações em andamento'}
+                </h1>
                 <p className="text-sm text-white/90">Megadance 2026</p>
               </div>
             </div>
@@ -74,7 +102,7 @@ export function Ranking({
       <main className="max-w-4xl mx-auto px-4 py-6">
         {loading && rankings.length === 0 ? (
           <div className="mb-4 rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-600">
-            A carregar ranking…
+            A carregar…
           </div>
         ) : null}
 
@@ -96,35 +124,66 @@ export function Ranking({
           </div>
         ) : null}
 
-        <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">
-            Como funciona a pontuação?
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4 text-sm">
-            <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
-              <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">Jurados (60%)</p>
-                <p className="text-gray-600">
-                  Avaliação técnica por critérios profissionais
-                </p>
+        {!showScores ? (
+          <div
+            className="mb-6 rounded-xl border border-purple-200 bg-purple-50 px-4 py-4 text-sm text-purple-900"
+            data-testid="ranking-awaiting-results"
+          >
+            <p className="font-semibold mb-1">
+              Quem vai pro topo? Já já a gente descobre!
+            </p>
+            <p className="text-purple-800">
+              Aqui é só acompanhar o movimento: quanta gente já votou em cada
+              um. Nota e ranking de verdade entram na hora que publicarem — não
+              sai da tela!
+            </p>
+          </div>
+        ) : null}
+
+        {adminPreview && !resultsPublished ? (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+            <Eye className="w-5 h-5 shrink-0 mt-0.5" />
+            <p>
+              Pré-visualização de administrador: vês as notas reais, mas o público
+              ainda só vê as contagens até publicares os resultados.
+            </p>
+          </div>
+        ) : null}
+
+        {showScores ? (
+          <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">
+              Como funciona a pontuação?
+            </h2>
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
+              <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
+                <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1">Jurados (80%)</p>
+                  <p className="text-gray-600">
+                    Avaliação técnica por critérios profissionais
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg">
-              <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">Público (40%)</p>
-                <p className="text-gray-600">
-                  Votação popular considerando preferências
-                </p>
+              <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg">
+                <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-gray-900 mb-1">Público (20%)</p>
+                  <p className="text-gray-600">
+                    Votação popular considerando preferências
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         <div className="space-y-4">
-          {rankings.map((artist, index) => {
-            const podiumSlot = index < 3 ? index + 1 : 0;
+          {sortedForDisplay.map((artist, index) => {
+            const podiumSlot =
+              showScores && artist.rank >= 1 && artist.rank <= 3
+                ? artist.rank
+                : 0;
 
             return (
               <div
@@ -134,7 +193,7 @@ export function Ranking({
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="flex-shrink-0">
-                    {getRankIcon(artist.rank)}
+                    {getRankIcon(showScores ? artist.rank : 0)}
                   </div>
 
                   <img
@@ -151,66 +210,71 @@ export function Ranking({
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                      {artist.totalScore.toFixed(1)}
-                    </div>
-                    <p className="text-xs text-gray-500">pontos</p>
+                    {showScores && artist.showScores ? (
+                      <>
+                        <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          {artist.totalScore.toFixed(1)}
+                        </div>
+                        <p className="text-xs text-gray-500">pontos</p>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className="text-3xl font-bold text-purple-700 tabular-nums"
+                          data-testid={`ranking-vote-count-${artist.artistId}`}
+                        >
+                          {artist.voteCount}
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          {artist.voteCount === 1
+                            ? 'avaliação'
+                            : 'avaliações'}
+                        </p>
+                      </>
+                    )}
                   </div>
                 </div>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
-                  <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-gray-600">
-                        Jurados
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-baseline gap-1">
+                {showScores && artist.showScores ? (
+                  <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
+                    <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-gray-600">
+                          Jurados
+                        </span>
+                      </div>
                       <span className="text-xl font-bold text-gray-900">
                         {artist.judgeScore.toFixed(1)}
                       </span>
-                      {artist.judgeVotes !== undefined && artist.judgeVotes > 0 ? (
-                        <span className="text-xs text-gray-500">
-                          ({artist.judgeVotes}{' '}
-                          {artist.judgeVotes === 1 ? 'voto' : 'votos'})
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">média</span>
-                      )}
                     </div>
-                  </div>
 
-                  <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                      <span className="text-xs font-semibold text-gray-600">
-                        Público
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap items-baseline gap-1">
+                    <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span className="text-xs font-semibold text-gray-600">
+                          Público
+                        </span>
+                      </div>
                       <span className="text-xl font-bold text-gray-900">
                         {artist.publicScore.toFixed(1)}
                       </span>
-                      {artist.publicVotes !== undefined &&
-                      artist.publicVotes > 0 ? (
-                        <span className="text-xs text-gray-500">
-                          ({artist.publicVotes}{' '}
-                          {artist.publicVotes === 1 ? 'voto' : 'votos'})
-                        </span>
-                      ) : (
-                        <span className="text-xs text-gray-500">média</span>
-                      )}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  <p className="mt-3 text-center text-xs text-gray-500">
+                    {artist.voteCount === 0
+                      ? 'Ainda sem avaliações'
+                      : 'Notas ocultas até publicação dos resultados'}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
 
         {!loading && rankings.length === 0 && !error ? (
-          <p className="text-center text-gray-500 py-8">Sem dados de ranking.</p>
+          <p className="text-center text-gray-500 py-8">Sem candidatos ativos.</p>
         ) : null}
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { Lock, Unlock, CheckCircle, XCircle } from 'lucide-react';
+import { Lock, Unlock, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
 import { Artist } from '../../types';
 
 interface ManageVotingProps {
@@ -6,6 +6,9 @@ interface ManageVotingProps {
   openArtistIds: string[];
   onToggleArtist: (artistId: string) => void | Promise<void>;
   listLoading?: boolean;
+  resultsPublished: boolean;
+  publishLoading?: boolean;
+  onSetResultsPublished: (published: boolean) => void | Promise<void>;
 }
 
 export function ManageVoting({
@@ -13,6 +16,9 @@ export function ManageVoting({
   openArtistIds,
   onToggleArtist,
   listLoading = false,
+  resultsPublished,
+  publishLoading = false,
+  onSetResultsPublished,
 }: ManageVotingProps) {
   return (
     <div className="space-y-6">
@@ -29,6 +35,51 @@ export function ManageVoting({
           A carregar candidatos…
         </div>
       ) : null}
+
+      <div
+        className={`rounded-xl border-2 p-6 mb-6 ${
+          resultsPublished
+            ? 'border-green-400 bg-green-50'
+            : 'border-amber-300 bg-amber-50'
+        }`}
+        data-testid="ranking-publish-panel"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 mb-1">
+              Resultados do ranking
+            </h3>
+            <p className="text-sm text-gray-600">
+              {resultsPublished
+                ? 'O público vê notas, pódio e vencedores no ranking.'
+                : 'O público vê apenas quantas pessoas avaliaram cada candidato (sem notas).'}
+            </p>
+          </div>
+          <button
+            type="button"
+            data-testid="ranking-publish-toggle"
+            disabled={publishLoading}
+            onClick={() => void onSetResultsPublished(!resultsPublished)}
+            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold transition-all shrink-0 ${
+              resultsPublished
+                ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white'
+            } disabled:opacity-60`}
+          >
+            {resultsPublished ? (
+              <>
+                <EyeOff className="w-5 h-5" />
+                Ocultar resultados
+              </>
+            ) : (
+              <>
+                <Eye className="w-5 h-5" />
+                Publicar resultados
+              </>
+            )}
+          </button>
+        </div>
+      </div>
 
       <div className="grid md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white rounded-xl p-4 shadow-md border-l-4 border-green-500">
@@ -130,6 +181,13 @@ export function ManageVoting({
           <li className="flex items-start gap-2">
             <span className="font-bold">4.</span>
             <span>Você pode fechar a votação a qualquer momento</span>
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="font-bold">5.</span>
+            <span>
+              Quando terminar, use &quot;Publicar resultados&quot; para revelar notas e
+              vencedores
+            </span>
           </li>
         </ul>
       </div>

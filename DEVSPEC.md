@@ -39,7 +39,7 @@ Implementação prevista como SPA **Vite 6 + React 18**, **Tailwind CSS 4**, **R
 |------|-----------|
 | Cliente único responsivo | App em [`frontend/`](./frontend/) (Vite/React): login, candidatos, votação por critérios (conforme perfil), ranking; mesma base para uso em celular e desktop. |
 | Gestão no mesmo app | CRUD de candidatos, gestão de usuários (incluindo alteração de papel) e operação do evento em rotas/componentes administrativos, com layout adequado a telas grandes. |
-| Regras de negócio | Manter critérios, ponderação **60% jurados / 40% público**, controle de abertura de votação por candidato e uma avaliação por usuário/candidato onde aplicável. |
+| Regras de negócio | Manter critérios, ponderação **80% jurados / 20% público**, controle de abertura de votação por candidato e uma avaliação por usuário/candidato onde aplicável. |
 
 Fora do escopo inicial (pode entrar em fases posteriores): **aplicação cliente separada** só para admin ou só para mobile; apps **nativos** store-ready quando o foco for primeiro o cliente web responsivo; pagamentos; multi-evento com tenants isolados; auditoria formal para disputas judiciais.
 
@@ -124,7 +124,7 @@ Organizar telas em `frontend/src/app/components/` — por exemplo `VotingHeader`
 | `UsersModule` | CRUD limitado; listagem e patch de `role` só `ADMIN`; perfil do usuário logado. |
 | `CandidatesModule` | CRUD admin; leitura autenticada para eleitores. |
 | `VotingModule` | Estado aberto/fechado por candidato; submissão de votos; validação de critérios por `role`; impedir duplicidade. |
-| `RankingModule` | Agregações: médias por critério, score ponderado 60/40, leaderboard. |
+| `RankingModule` | Agregações: médias por critério, score ponderado 80/20, leaderboard. |
 
 ### 4.3 Modelo de dados (conceitual)
 
@@ -217,7 +217,7 @@ Detalhe operacional e exemplos de probes: [`deploy/kubernetes/README.md`](./depl
 1. Usuário se cadastra/loga via Google no cliente e permanece `PUBLIC` até um admin alterar.
 2. Admin gerencia candidatos na mesma aplicação (área admin) e abre/fecha votação por candidato.
 3. Público e jurado votam apenas com seus critérios; servidor rejeita combinações inválidas e candidatos fechados.
-4. Ranking reflete a ponderação 60/40 e está disponível para todos os perfis autenticados.
+4. Ranking reflete a ponderação 80/20 e está disponível para todos os perfis autenticados.
 5. Admin altera `role` entre público, jurado e administrador pelo painel no mesmo app.
 
 ---

@@ -10,13 +10,16 @@ import {
   fetchUsers,
   patchUser,
   setCandidateVotingOpen,
+  setRankingPublished,
   updateCandidate,
   type CreateCandidateBody,
   type MeResponse,
   type UserRole,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
+import { isRealtimeEnabled } from '../lib/env';
 import { mapRankingEntriesToRows } from '../lib/ranking-map';
+import { connectVoterRealtime } from '../lib/realtime-client';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Ranking } from './components/Ranking';
 import type { Artist, RankingRow } from './types';
@@ -72,6 +75,8 @@ export function AdminAppShell() {
   const [rankingRows, setRankingRows] = useState<RankingRow[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState<string | null>(null);
+  const [resultsPublished, setResultsPublished] = useState(false);
+  const [publishLoading, setPublishLoading] = useState(false);
 
   const menuUser = {
     name: user?.displayName ?? 'Admin',
@@ -116,11 +121,25 @@ export function AdminAppShell() {
     void loadCandidates();
   }, [loadCandidates]);
 
+  useEffect(() => {
+    void fetchRanking()
+      .then((res) => setResultsPublished(res.resultsPublished))
+      .catch(() => {});
+  }, []);
+
   const loadRanking = useCallback(async () => {
     setRankingLoading(true);
     try {
       const res = await fetchRanking();
-      setRankingRows(mapRankingEntriesToRows(res.entries, candidates));
+      setResultsPublished(res.resultsPublished);
+      setRankingRows(
+        mapRankingEntriesToRows(
+          res.entries,
+          candidates,
+          res.resultsPublished,
+          true,
+        ),
+      );
       setRankingError(null);
     } catch (e) {
       setRankingError(
@@ -139,6 +158,45 @@ export function AdminAppShell() {
     }
     void loadRanking();
   }, [showRanking, loadRanking]);
+
+  useEffect(() => {
+    if (!user || !showRanking) {
+      return;
+    }
+    return connectVoterRealtime({
+      onCandidatesChanged: () => void loadCandidates(),
+      onRankingChanged: () => void loadRanking(),
+    });
+  }, [user, showRanking, loadCandidates, loadRanking]);
+
+  useEffect(() => {
+    if (!showRanking || isRealtimeEnabled()) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      void loadRanking();
+    }, 8000);
+    return () => window.clearInterval(id);
+  }, [showRanking, loadRanking]);
+
+  const handleSetResultsPublished = async (published: boolean) => {
+    setPublishLoading(true);
+    try {
+      await setRankingPublished(published);
+      toast.success(
+        published
+          ? 'Resultados publicados para o público.'
+          : 'Resultados ocultados do público.',
+      );
+      await loadRanking();
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError ? e.message : 'Erro ao atualizar resultados.',
+      );
+    } finally {
+      setPublishLoading(false);
+    }
+  };
 
   const votingOpenIds = useMemo(
     () => candidates.filter((a) => a.votingOpen).map((a) => a.id),
@@ -222,6 +280,8 @@ export function AdminAppShell() {
     return (
       <Ranking
         rankings={rankingRows}
+        resultsPublished={resultsPublished}
+        adminPreview
         onClose={() => setShowRanking(false)}
         loading={rankingLoading}
         error={rankingError}
@@ -241,6 +301,11 @@ export function AdminAppShell() {
       }}
       openArtistIds={votingOpenIds}
       onToggleArtist={(id) => void handleToggleArtist(id)}
+      resultsPublished={resultsPublished}
+      publishLoading={publishLoading}
+      onSetResultsPublished={(published) =>
+        void handleSetResultsPublished(published)
+      }
       onAddArtist={handleAddArtist}
       onUpdateArtist={handleUpdateArtist}
       onDeleteArtist={handleDeleteArtist}

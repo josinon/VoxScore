@@ -193,11 +193,13 @@ async function installSmokeApiMocks(page: Page, state: SmokeState) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         schemaVersion: 1,
+        resultsPublished: true,
         entries: [
           {
             candidateId: CANDIDATE_ID,
             candidateName: 'Artista Smoke',
             rank: 1,
+            voteCount: 4,
             finalScore: 8.5,
             judgeCompositeAverage: null,
             publicCompositeAverage: 8.5,

@@ -37,10 +37,11 @@ export interface RankingRow {
   name: string;
   song: string;
   image: string;
+  /** Total de pessoas que avaliaram (jurados + público). */
+  voteCount: number;
   judgeScore: number;
   publicScore: number;
   totalScore: number;
-  /** Se omitido, a UI não mostra contagem de votos. */
-  judgeVotes?: number;
-  publicVotes?: number;
+  /** Quando `false`, a UI mostra só `voteCount` (sem notas nem pódio). */
+  showScores: boolean;
 }

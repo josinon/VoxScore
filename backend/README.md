@@ -1,6 +1,6 @@
 # VoxScore — API (NestJS)
 
-Backend das Fases 1–6 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos**, **votação por critérios**, **ranking 60/40** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
+Backend das Fases 1–6 do [IMPLEMENTATION_PLAN.md](../IMPLEMENTATION_PLAN.md): NestJS + PostgreSQL + TypeORM, health check, **JWT**, **OAuth Google** (mock em dev/CI), **`GET /users/me`**, seed do primeiro **ADMIN**, **CRUD de candidatos**, **votação por critérios**, **ranking 80/20** (com Swagger em `/api/v1/docs`), `POST /auth/dev/token` apenas quando ativado.
 
 ## Pré-requisitos
 
@@ -115,9 +115,10 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 ### Ranking (Fase 6)
 
-- **`GET /api/v1/ranking`** — qualquer utilizador autenticado (`PUBLIC`, `JUDGE`, `ADMIN`). Resposta `{ "schemaVersion": 1, "entries": [ ... ] }` (contrato versionado; incrementar `schemaVersion` só com mudanças documentadas).
+- **`GET /api/v1/ranking`** — qualquer utilizador autenticado (`PUBLIC`, `JUDGE`, `ADMIN`). Resposta `{ "schemaVersion": 1, "resultsPublished": boolean, "entries": [ ... ] }`. Enquanto `resultsPublished` for `false`, **público e jurados** recebem só `voteCount` por candidato (sem notas nem `rank` de vencedores); **ADMIN** vê sempre o leaderboard completo.
+- **`PATCH /api/v1/ranking/publish`** — **ADMIN**; corpo `{ "published": true | false }`. Alterna a visibilidade dos resultados para o público e emite `ranking_changed` no WebSocket.
 - Inclui **apenas candidatos com `active: true`**, ordenados no leaderboard por `finalScore` (desc.), depois nome e id (empates no mesmo `rank` estilo competição).
-- **Fórmula** (alinhada ao [README do produto](../README.md) §5): para cada votante, calcula-se a **média dos critérios** desse voto (4 ou 5 notas); depois a **média dessas médias** por grupo (**jurados** / **público**). Com **os dois grupos** com votos: `finalScore = 0.6 * média_jurados + 0.4 * média_público`. Com **só um grupo**: `finalScore` é a média desse grupo (o outro não entra como zero). **Sem votos**: `finalScore = 0`. Implementação e constantes: [`src/ranking/ranking-formula.ts`](./src/ranking/ranking-formula.ts).
+- **Fórmula** (alinhada ao [README do produto](../README.md) §5): para cada votante, calcula-se a **média dos critérios** desse voto (4 ou 5 notas); depois a **média dessas médias** por grupo (**jurados** / **público**). Com **os dois grupos** com votos: `finalScore = 0.8 * média_jurados + 0.2 * média_público`. Com **só um grupo**: `finalScore` é a média desse grupo (o outro não entra como zero). **Sem votos**: `finalScore = 0`. Implementação e constantes: [`src/ranking/ranking-formula.ts`](./src/ranking/ranking-formula.ts).
 - Cada entrada inclui médias por critério (`judgeCriteriaAverages` / `publicCriteriaAverages`) quando existirem votos nesse grupo, e `judgeCompositeAverage` / `publicCompositeAverage` (média das médias por voto). Valores numéricos arredondados a **4 casas decimais** no servidor.
 
 ### Tempo real (WebSocket)

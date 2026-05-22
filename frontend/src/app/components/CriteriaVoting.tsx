@@ -29,6 +29,8 @@ interface CriteriaVotingProps {
 const SCORE_MIN = 1;
 const SCORE_MAX = 10;
 const SCORE_STEP = 0.5;
+/** Posição inicial do slider antes de o utilizador escolher nota (0 = sem avaliação). */
+const SLIDER_MIN = 0;
 const STAR_COUNT = 10;
 
 function formatVoteScore(score: number): string {
@@ -91,7 +93,7 @@ function CriterionScorePicker({
   value: number | undefined;
   onChange: (score: number) => void;
 }) {
-  const sliderValue = value ?? 5;
+  const sliderValue = value ?? SLIDER_MIN;
 
   const adjust = (delta: number) => {
     if (value === undefined) {
@@ -146,16 +148,22 @@ function CriterionScorePicker({
       <div className="px-1">
         <Slider
           data-testid={`score-slider-${criterionId}`}
-          min={SCORE_MIN}
+          min={SLIDER_MIN}
           max={SCORE_MAX}
           step={SCORE_STEP}
           value={[sliderValue]}
-          onValueChange={(vals) => onChange(clampScore(vals[0] ?? SCORE_MIN))}
+          onValueChange={(vals) => {
+            const raw = vals[0] ?? SLIDER_MIN;
+            if (raw < SCORE_MIN) {
+              return;
+            }
+            onChange(clampScore(raw));
+          }}
           className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-track]]:bg-purple-100 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-purple-600 [&_[data-slot=slider-range]]:to-pink-600 [&_[data-slot=slider-thumb]]:size-7 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-purple-600 [&_[data-slot=slider-thumb]]:shadow-md"
           aria-label={`Nota para ${criterionId}`}
         />
         <div className="mt-2 flex justify-between text-xs font-medium text-gray-400">
-          <span>1</span>
+          <span>0</span>
           <span>5</span>
           <span>10</span>
         </div>

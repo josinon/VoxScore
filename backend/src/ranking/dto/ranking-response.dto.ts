@@ -1,7 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 export class RankingEntryDto {
-  @ApiProperty({ example: 1 })
+  @ApiProperty({
+    example: 1,
+    description:
+      'Posição no pódio; 0 quando os resultados ainda não foram publicados (vista público/jurado).',
+  })
   rank: number;
 
   @ApiProperty({ format: 'uuid' })
@@ -12,7 +16,14 @@ export class RankingEntryDto {
 
   @ApiProperty({
     description:
-      'Média da média por voto dos jurados (1–10 por critério); null se não houver votos de jurados.',
+      'Número de pessoas que avaliaram este candidato (soma de votos de jurados e público).',
+    example: 12,
+  })
+  voteCount: number;
+
+  @ApiProperty({
+    description:
+      'Média da média por voto dos jurados (1–10 por critério); null se oculto ou sem votos de jurados.',
     nullable: true,
     example: 7.5,
   })
@@ -20,7 +31,7 @@ export class RankingEntryDto {
 
   @ApiProperty({
     description:
-      'Média da média por voto do público; null se não houver votos públicos.',
+      'Média da média por voto do público; null se oculto ou sem votos públicos.',
     nullable: true,
     example: 8,
   })
@@ -28,13 +39,14 @@ export class RankingEntryDto {
 
   @ApiProperty({
     description:
-      '60% jurados + 40% público quando ambos existem; só um grupo → essa média; sem votos → 0.',
+      '80% jurados + 20% público quando ambos existem; null se resultados ocultos.',
+    nullable: true,
     example: 7.4,
   })
-  finalScore: number;
+  finalScore: number | null;
 
   @ApiProperty({
-    description: 'Média por critério (jurados); null se não houver votos de jurados.',
+    description: 'Média por critério (jurados); null se oculto ou sem votos de jurados.',
     nullable: true,
     type: 'object',
     additionalProperties: { type: 'number' },
@@ -42,7 +54,7 @@ export class RankingEntryDto {
   judgeCriteriaAverages: Record<string, number> | null;
 
   @ApiProperty({
-    description: 'Média por critério (público); null se não houver votos públicos.',
+    description: 'Média por critério (público); null se oculto ou sem votos públicos.',
     nullable: true,
     type: 'object',
     additionalProperties: { type: 'number' },
@@ -57,6 +69,12 @@ export class RankingResponseDto {
     example: 1,
   })
   schemaVersion: 1;
+
+  @ApiProperty({
+    description:
+      'Quando `true`, notas e vencedores estão visíveis para público e jurados.',
+  })
+  resultsPublished: boolean;
 
   @ApiProperty({ type: [RankingEntryDto] })
   entries: RankingEntryDto[];
