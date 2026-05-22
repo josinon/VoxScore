@@ -16,6 +16,12 @@ import {
   JUDGE_VOTE_CRITERIA,
   PUBLIC_VOTE_CRITERIA,
 } from './voting.constants';
+import {
+  isValidVoteScore,
+  VOTE_SCORE_MAX,
+  VOTE_SCORE_MIN,
+  VOTE_SCORE_STEP,
+} from './vote-score';
 
 const PG_UNIQUE_VIOLATION = '23505';
 
@@ -57,9 +63,9 @@ export class VotingService {
     }
     for (const key of allowed) {
       const v = criteriaScores[key];
-      if (!Number.isInteger(v) || v < 1 || v > 10) {
+      if (!isValidVoteScore(v)) {
         throw new BadRequestException(
-          `Each score must be an integer from 1 to 10 (invalid: ${key}=${String(v)})`,
+          `Each score must be from ${VOTE_SCORE_MIN} to ${VOTE_SCORE_MAX} in steps of ${VOTE_SCORE_STEP} (invalid: ${key}=${String(v)})`,
         );
       }
     }

@@ -235,11 +235,7 @@ async function rateAllPublicCriteria(page: Page) {
     'wouldListenAgain',
   ] as const;
   for (const id of ids) {
-    await page
-      .getByTestId(`criterion-row-${id}`)
-      .locator('button')
-      .nth(9)
-      .click();
+    await page.getByTestId(`score-btn-${id}-10`).click();
   }
 }
 

@@ -26,7 +26,7 @@ export class Vote {
   @JoinColumn({ name: 'candidate_id' })
   candidate: Candidate;
 
-  /** Critério → nota 1–10 (validação de negócio nas fases seguintes) */
+  /** Critério → nota 1–10 em passos de 0,5 */
   @Column({ type: 'jsonb' })
   criteriaScores: Record<string, number>;
 

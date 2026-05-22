@@ -9,6 +9,7 @@ data:
   TYPEORM_MIGRATIONS_RUN: 'false'
   AUTH_DEV_TOKEN_ENABLED: 'false'
   AUTH_GOOGLE_MOCK_ENABLED: 'false'
+  JWT_EXPIRES_IN: '1d'
   SWAGGER_ENABLED: 'false'
   BOOTSTRAP_ADMIN_EMAIL: admin@example.com
   BOOTSTRAP_ADMIN_DISPLAY_NAME: Administrator

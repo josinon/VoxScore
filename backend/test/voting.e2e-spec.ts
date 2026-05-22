@@ -219,6 +219,40 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .send({ criteriaScores: badHigh })
       .expect(400);
 
+    const badStep = { ...publicScores(), likedTheMusic: 8.3 };
+    await request(server)
+      .post(`/api/v1/candidates/${id}/votes`)
+      .set('Authorization', `Bearer ${publicToken}`)
+      .send({ criteriaScores: badStep })
+      .expect(400);
+
+    await request(server)
+      .delete(`/api/v1/candidates/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
+  });
+
+  it('T5.1b — notas em passos de 0,5 → 201', async () => {
+    const create = await request(server)
+      .post('/api/v1/candidates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(validCandidate('T5.1b', { votingOpen: true }))
+      .expect(201);
+    const id = (create.body as { id: string }).id;
+
+    await request(server)
+      .post(`/api/v1/candidates/${id}/votes`)
+      .set('Authorization', `Bearer ${publicToken}`)
+      .send({
+        criteriaScores: {
+          entertainment: 7.5,
+          emotion: 8,
+          likedTheMusic: 9.5,
+          wouldListenAgain: 6.5,
+        },
+      })
+      .expect(201);
+
     await request(server)
       .delete(`/api/v1/candidates/${id}`)
       .set('Authorization', `Bearer ${adminToken}`)

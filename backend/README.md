@@ -95,7 +95,7 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 ### Votação (Fase 5)
 
-- **`POST /api/v1/candidates/:id/votes`** — utilizador autenticado com papel **`PUBLIC`** ou **`JUDGE`**. Corpo JSON `{ "criteriaScores": { ... } }` com **exactamente** as chaves do papel e valores **inteiros de 1 a 10**.
+- **`POST /api/v1/candidates/:id/votes`** — utilizador autenticado com papel **`PUBLIC`** ou **`JUDGE`**. Corpo JSON `{ "criteriaScores": { ... } }` com **exactamente** as chaves do papel e valores de **1 a 10 em passos de 0,5** (ex.: `7`, `7.5`, `8`).
   - **`PUBLIC`** (4 chaves): `entertainment`, `emotion`, `likedTheMusic`, `wouldListenAgain`.
   - **`JUDGE`** (5 chaves): `vocalTechnique`, `interpretation`, `stagePresence`, `originality`, `composition`.
 - **`PATCH /api/v1/candidates/:id/voting`** — apenas **ADMIN**; corpo `{ "open": boolean }` para abrir ou fechar a votação desse candidato (equivalente semântico a atualizar `votingOpen`).
@@ -110,7 +110,7 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 | **`votingOpen === false`** | **403** |
 | Utilizador desativado | **403** |
 | Chaves de `criteriaScores` erradas para o papel (número ou nomes) | **400** |
-| Nota não inteira ou fora de **1–10** | **400** |
+| Nota fora de **1–10** ou passo ≠ **0,5** | **400** |
 | Segundo voto do mesmo utilizador no mesmo candidato | **409** |
 
 ### Ranking (Fase 6)

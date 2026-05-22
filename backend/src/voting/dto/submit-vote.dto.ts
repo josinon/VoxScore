@@ -14,7 +14,8 @@ export class SubmitVoteDto {
       likedTheMusic: 9,
       wouldListenAgain: 8,
     },
-    description: 'Mapa critério → nota inteira 1–10 (chaves conforme papel)',
+    description:
+      'Mapa critério → nota 1–10 em passos de 0,5 (chaves conforme papel)',
     type: 'object',
     additionalProperties: { type: 'number' },
   })

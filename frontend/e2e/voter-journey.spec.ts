@@ -80,11 +80,54 @@ async function rateAllPublicCriteria(page: Page) {
     'wouldListenAgain',
   ] as const;
   for (const id of ids) {
-    await page.getByTestId(`criterion-row-${id}`).locator('button').nth(9).click();
+    await page.getByTestId(`score-btn-${id}-10`).click();
   }
 }
 
 test.describe('Jornada do eleitor (API mock)', () => {
+  test('permite nota com passo de 0,5 (ex.: 8,5)', async ({ page }) => {
+    await installAuthMocks(page);
+    await installCandidatesMock(page);
+    await page.route(`**/api/v1/candidates/${CANDIDATE_ID}/votes`, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.fallback();
+        return;
+      }
+      const body = route.request().postDataJSON() as {
+        criteriaScores?: Record<string, number>;
+      };
+      expect(body.criteriaScores?.entertainment).toBe(8.5);
+      await route.fulfill({
+        status: 201,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+          candidateId: CANDIDATE_ID,
+          criteriaScores: body.criteriaScores ?? {},
+          createdAt: '2024-01-01T00:00:00.000Z',
+        }),
+      });
+    });
+
+    await loginAsPublic(page);
+    await page
+      .getByTestId(`artist-card-${CANDIDATE_ID}`)
+      .getByRole('button', { name: 'Avaliar' })
+      .click();
+
+    await page.getByTestId('score-btn-entertainment-8.5').click();
+    await expect(
+      page.getByTestId('criterion-row-entertainment'),
+    ).toContainText('8,5');
+
+    const ids = ['emotion', 'likedTheMusic', 'wouldListenAgain'] as const;
+    for (const id of ids) {
+      await page.getByTestId(`score-btn-${id}-10`).click();
+    }
+    await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
+    await expect(page.getByTestId('vote-confirmation')).toBeVisible();
+  });
+
   test('lista, detalhe, voto e confirmação', async ({ page }) => {
     await installAuthMocks(page);
     await installCandidatesMock(page);
