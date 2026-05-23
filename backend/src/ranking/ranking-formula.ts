@@ -1,8 +1,5 @@
 import { UserRole } from '../common/user-role.enum';
-import {
-  JUDGE_VOTE_CRITERIA,
-  PUBLIC_VOTE_CRITERIA,
-} from '../voting/voting.constants';
+import { VOTE_CRITERIA } from '../voting/voting.constants';
 
 /**
  * Ponderação do ranking (README §5 — Megadance 2026; DEVSPEC §4.2 `RankingModule`).
@@ -29,7 +26,7 @@ export interface RankingLeaderboardRow {
   rank: number;
   candidateId: string;
   candidateName: string;
-  /** Média das médias por voto (média dos 5 critérios por voto de jurado); `null` se não houver votos de jurados. */
+  /** Média das médias por voto (média dos 4 critérios por voto de jurado); `null` se não houver votos de jurados. */
   judgeCompositeAverage: number | null;
   /** Idem para 4 critérios do público; `null` se não houver votos públicos. */
   publicCompositeAverage: number | null;
@@ -54,13 +51,8 @@ function arithmeticMean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-function compositeForJudgeVote(scores: Record<string, number>): number {
-  const vals = JUDGE_VOTE_CRITERIA.map((k) => scores[k]);
-  return arithmeticMean(vals);
-}
-
-function compositeForPublicVote(scores: Record<string, number>): number {
-  const vals = PUBLIC_VOTE_CRITERIA.map((k) => scores[k]);
+function compositeForVote(scores: Record<string, number>): number {
+  const vals = VOTE_CRITERIA.map((k) => scores[k]);
   return arithmeticMean(vals);
 }
 
@@ -84,10 +76,10 @@ function aggregateCandidate(
   const publicVotes = votes.filter((v) => v.userRole === UserRole.PUBLIC);
 
   const judgeComposites = judgeVotes.map((v) =>
-    compositeForJudgeVote(v.criteriaScores),
+    compositeForVote(v.criteriaScores),
   );
   const publicComposites = publicVotes.map((v) =>
-    compositeForPublicVote(v.criteriaScores),
+    compositeForVote(v.criteriaScores),
   );
 
   const judgeCompositeAverage =
@@ -120,11 +112,11 @@ function aggregateCandidate(
     finalScore: roundScore4(finalRaw),
     judgeCriteriaAverages:
       judgeVotes.length > 0
-        ? criterionAverages(judgeVotes, JUDGE_VOTE_CRITERIA)
+        ? criterionAverages(judgeVotes, VOTE_CRITERIA)
         : null,
     publicCriteriaAverages:
       publicVotes.length > 0
-        ? criterionAverages(publicVotes, PUBLIC_VOTE_CRITERIA)
+        ? criterionAverages(publicVotes, VOTE_CRITERIA)
         : null,
   };
 }

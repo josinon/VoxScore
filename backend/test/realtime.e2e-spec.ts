@@ -174,10 +174,10 @@ describeOrSkip('Realtime WebSocket (e2e)', () => {
       .set('Authorization', `Bearer ${publicToken}`)
       .send({
         criteriaScores: {
-          entertainment: 8,
-          emotion: 7,
-          likedTheMusic: 9,
-          wouldListenAgain: 8,
+          scriptDevelopment: 8,
+          creativity: 7,
+          synchronism: 9,
+          originalityAndMusicality: 8,
         },
       })
       .expect(201);

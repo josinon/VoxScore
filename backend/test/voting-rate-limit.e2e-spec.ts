@@ -11,10 +11,10 @@ import { User } from '../src/entities/user.entity';
 const describeOrSkip = process.env.DATABASE_URL ? describe : describe.skip;
 
 const publicScores = () => ({
-  entertainment: 8,
-  emotion: 7,
-  likedTheMusic: 9,
-  wouldListenAgain: 8,
+  scriptDevelopment: 8,
+  creativity: 7,
+  synchronism: 9,
+  originalityAndMusicality: 8,
 });
 
 describeOrSkip('Rate limit on votes (e2e) — T10.3', () => {

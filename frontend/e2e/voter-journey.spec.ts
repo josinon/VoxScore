@@ -72,12 +72,12 @@ async function loginAsPublic(page: Page) {
   await expect(page).toHaveURL(/\/votacao$/);
 }
 
-async function rateAllPublicCriteria(page: Page) {
+async function rateAllCriteria(page: Page) {
   const ids = [
-    'entertainment',
-    'emotion',
-    'likedTheMusic',
-    'wouldListenAgain',
+    'scriptDevelopment',
+    'creativity',
+    'synchronism',
+    'originalityAndMusicality',
   ] as const;
   for (const id of ids) {
     await page.getByTestId(`score-btn-${id}-10`).click();
@@ -96,7 +96,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
       const body = route.request().postDataJSON() as {
         criteriaScores?: Record<string, number>;
       };
-      expect(body.criteriaScores?.entertainment).toBe(8.5);
+      expect(body.criteriaScores?.scriptDevelopment).toBe(8.5);
       await route.fulfill({
         status: 201,
         headers: { 'Content-Type': 'application/json' },
@@ -115,12 +115,12 @@ test.describe('Jornada do eleitor (API mock)', () => {
       .getByRole('button', { name: 'Avaliar' })
       .click();
 
-    await page.getByTestId('score-btn-entertainment-8.5').click();
+    await page.getByTestId('score-btn-scriptDevelopment-8.5').click();
     await expect(
-      page.getByTestId('criterion-row-entertainment'),
+      page.getByTestId('criterion-row-scriptDevelopment'),
     ).toContainText('8,5');
 
-    const ids = ['emotion', 'likedTheMusic', 'wouldListenAgain'] as const;
+    const ids = ['creativity', 'synchronism', 'originalityAndMusicality'] as const;
     for (const id of ids) {
       await page.getByTestId(`score-btn-${id}-10`).click();
     }
@@ -162,7 +162,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
     await page.getByTestId('close-artist-details').click();
 
     await page.getByTestId(`artist-card-${CANDIDATE_ID}`).getByRole('button', { name: 'Avaliar' }).click();
-    await rateAllPublicCriteria(page);
+    await rateAllCriteria(page);
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
 
     await expect(page.getByTestId('vote-confirmation')).toBeVisible();
@@ -205,7 +205,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
 
     await loginAsPublic(page);
     await page.getByTestId(`artist-card-${CANDIDATE_ID}`).getByRole('button', { name: 'Avaliar' }).click();
-    await rateAllPublicCriteria(page);
+    await rateAllCriteria(page);
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
     await expect(page.getByTestId('vote-confirmation')).toBeVisible();
     await page.getByRole('button', { name: 'Voltar ao Início' }).click();
@@ -217,7 +217,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
     await expect(page).toHaveURL(/\/votacao$/);
 
     await page.getByTestId(`artist-card-${CANDIDATE_ID}`).getByRole('button', { name: 'Avaliar' }).click();
-    await rateAllPublicCriteria(page);
+    await rateAllCriteria(page);
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
@@ -435,7 +435,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
 
     await loginAsPublic(page);
     await page.getByTestId(`artist-card-${CANDIDATE_ID}`).getByRole('button', { name: 'Avaliar' }).click();
-    await rateAllPublicCriteria(page);
+    await rateAllCriteria(page);
 
     const extraWidth = await page.evaluate(() => {
       const el = document.documentElement;

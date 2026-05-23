@@ -17,30 +17,18 @@ Resumo das funcionalidades — **Megadance 2026**.
 - **Gestão de utilizadores**: listar, alterar papel (`PUBLIC` / `JUDGE` / `ADMIN`) e desativar; o servidor impede remover o último `ADMIN`
 - **Ranking** do servidor (`GET /ranking`) no painel
 
-### Jurado
+### Jurado e público
 
-Avaliação por **5 critérios técnicos**:
+Avaliação por **4 critérios** (Megadance 2026):
 
-- Técnica Vocal
-- Interpretação
-- Presença de Palco
-- Originalidade
-- Composição
+- Desenvolvimento do Roteiro
+- Criatividade
+- Sincronismo
+- Originalidade e Musicalidade
 
-- Notas de 1 a 10 estrelas por critério
+- Notas de 1 a 10 (passos de 0,5) por critério
 - Pode avaliar múltiplos candidatos
-
-### Público
-
-Avaliação por **4 critérios de preferência**:
-
-- Entretenimento
-- Emoção
-- Gostei da Música
-- Ouviria Novamente
-
-- Notas de 1 a 10 estrelas por critério
-- Pode avaliar múltiplos candidatos
+- O ranking continua a ponderar **80% média dos jurados + 20% média do público**
 
 ## 3. Sistema de votação
 

@@ -74,14 +74,14 @@ describeOrSkip('Fase 1 — persistência e constraints (integração)', () => {
     await votes.save({
       user,
       candidate,
-      criteriaScores: { entertainment: 8 },
+      criteriaScores: { scriptDevelopment: 8, creativity: 8, synchronism: 8, originalityAndMusicality: 8 },
     });
 
     await expect(
       votes.save({
         user,
         candidate,
-        criteriaScores: { entertainment: 9 },
+        criteriaScores: { scriptDevelopment: 9, creativity: 9, synchronism: 9, originalityAndMusicality: 9 },
       }),
     ).rejects.toThrow();
   });

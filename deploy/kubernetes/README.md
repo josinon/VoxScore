@@ -200,6 +200,65 @@ kubectl -n voxscore rollout status deployment/voxscore-frontend
 
 **Alternativa mais rápida (só desenvolvimento):** [`overlays/local/`](./overlays/local/) — Postgres + mock OAuth + Ingress `voxscore.local`; um único `kubectl apply -k ./overlays/local` e entrada em `/etc/hosts` (ver secção 3 mais abaixo).
 
+## Atualizar versão em produção (ex.: 0.0.1 → 0.0.3)
+
+Use quando a stack já está no cluster (overlay [`with-postgres`](./overlays/with-postgres/)) e só quer **novas imagens** da API e do frontend. O Postgres **não** é recriado; os dados no PVC mantêm-se.
+
+### 1. Construir e publicar as imagens com a nova tag
+
+Na raiz do repositório (exemplo com Docker Hub `josinon/` e produção em `https://megadance.lab6.cloud`):
+
+```bash
+cd /caminho/para/VoxScore
+
+docker build -t josinon/voxscore-api:0.0.3 ./backend
+docker push josinon/voxscore-api:0.0.3
+
+docker build \
+  --build-arg VITE_OAUTH_REDIRECT_ORIGIN=https://megadance.lab6.cloud \
+  -t josinon/voxscore-frontend:0.0.3 \
+  ./frontend
+docker push josinon/voxscore-frontend:0.0.3
+```
+
+(`VITE_API_BASE_URL` pode ficar vazio se o Ingress servir API e SPA no mesmo host, como nos manifestos.)
+
+### 2. Atualizar a tag no Kustomize
+
+Em [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml), bloco `images:` → `newTag: "0.0.3"` para API e frontend.
+
+### 3. Migrações (se a nova versão trouxer migrações TypeORM novas)
+
+Com `TYPEORM_MIGRATIONS_RUN=false`, corra o Job **antes** ou **junto** com o rollout, com a **mesma** imagem `0.0.3`:
+
+```bash
+cd deploy/kubernetes
+
+kubectl -n voxscore delete job voxscore-migrate --ignore-not-found
+sed 's|josinon/voxscore-api:latest|josinon/voxscore-api:0.0.3|g' ./base/job-migrate.yaml | kubectl -n voxscore apply -f -
+kubectl -n voxscore wait --for=condition=complete job/voxscore-migrate --timeout=300s
+```
+
+### 4. Aplicar e esperar o rollout
+
+```bash
+kubectl apply -k ./overlays/with-postgres
+
+kubectl -n voxscore rollout status deployment/voxscore-api
+kubectl -n voxscore rollout status deployment/voxscore-frontend
+kubectl -n voxscore get pods
+```
+
+O Kubernetes faz **rolling update**: substitui Pods antigos pelos novos que puxam `josinon/voxscore-api:0.0.3` e `josinon/voxscore-frontend:0.0.3`. O URL público (ex. `https://megadance.lab6.cloud`) não muda.
+
+### 5. Verificação rápida
+
+```bash
+kubectl -n voxscore get deployment voxscore-api -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+kubectl -n voxscore get deployment voxscore-frontend -o jsonpath='{.spec.template.spec.containers[0].image}{"\n"}'
+curl -sS https://megadance.lab6.cloud/api/v1/health
+```
+
 ## 1. Construir e publicar imagens
 
 Na raiz de cada serviço (ajuste o registry e a tag ao vosso CI/CD):

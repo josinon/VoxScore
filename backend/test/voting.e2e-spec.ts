@@ -7,24 +7,19 @@ import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
-import { JUDGE_VOTE_CRITERIA } from '../src/voting/voting.constants';
+import { VOTE_CRITERIA } from '../src/voting/voting.constants';
 
 const describeOrSkip = process.env.DATABASE_URL ? describe : describe.skip;
 
-const publicScores = () => ({
-  entertainment: 8,
-  emotion: 7,
-  likedTheMusic: 9,
-  wouldListenAgain: 8,
+const voteScores = () => ({
+  scriptDevelopment: 8,
+  creativity: 7,
+  synchronism: 9,
+  originalityAndMusicality: 8,
 });
 
-const judgeScores = () => ({
-  vocalTechnique: 8,
-  interpretation: 7,
-  stagePresence: 6,
-  originality: 9,
-  composition: 8,
-});
+const publicScores = voteScores;
+const judgeScores = voteScores;
 
 function validCandidate(name: string, overrides: Record<string, unknown> = {}) {
   return {
@@ -152,7 +147,7 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .expect(204);
   });
 
-  it('T5.2 — PUBLIC com critérios de jurado → 400', async () => {
+  it('T5.2 — PUBLIC com chaves inválidas (critérios antigos) → 400', async () => {
     const create = await request(server)
       .post('/api/v1/candidates')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -163,7 +158,14 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
     await request(server)
       .post(`/api/v1/candidates/${id}/votes`)
       .set('Authorization', `Bearer ${publicToken}`)
-      .send({ criteriaScores: judgeScores() })
+      .send({
+        criteriaScores: {
+          entertainment: 8,
+          emotion: 7,
+          likedTheMusic: 9,
+          wouldListenAgain: 8,
+        },
+      })
       .expect(400);
 
     await request(server)
@@ -172,7 +174,7 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .expect(204);
   });
 
-  it('T5.3 — JUDGE com 4 critérios → 400', async () => {
+  it('T5.3 — JUDGE com 3 critérios → 400', async () => {
     const create = await request(server)
       .post('/api/v1/candidates')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -180,15 +182,15 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .expect(201);
     const id = (create.body as { id: string }).id;
 
-    const four: Record<string, number> = {};
-    for (const k of JUDGE_VOTE_CRITERIA.slice(0, 4)) {
-      four[k] = 7;
+    const incomplete: Record<string, number> = {};
+    for (const k of VOTE_CRITERIA.slice(0, 3)) {
+      incomplete[k] = 7;
     }
 
     await request(server)
       .post(`/api/v1/candidates/${id}/votes`)
       .set('Authorization', `Bearer ${judgeToken}`)
-      .send({ criteriaScores: four })
+      .send({ criteriaScores: incomplete })
       .expect(400);
 
     await request(server)
@@ -205,21 +207,21 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .expect(201);
     const id = (create.body as { id: string }).id;
 
-    const badLow = { ...publicScores(), entertainment: 0 };
+    const badLow = { ...publicScores(), scriptDevelopment: 0 };
     await request(server)
       .post(`/api/v1/candidates/${id}/votes`)
       .set('Authorization', `Bearer ${publicToken}`)
       .send({ criteriaScores: badLow })
       .expect(400);
 
-    const badHigh = { ...publicScores(), emotion: 11 };
+    const badHigh = { ...publicScores(), creativity: 11 };
     await request(server)
       .post(`/api/v1/candidates/${id}/votes`)
       .set('Authorization', `Bearer ${publicToken}`)
       .send({ criteriaScores: badHigh })
       .expect(400);
 
-    const badStep = { ...publicScores(), likedTheMusic: 8.3 };
+    const badStep = { ...publicScores(), synchronism: 8.3 };
     await request(server)
       .post(`/api/v1/candidates/${id}/votes`)
       .set('Authorization', `Bearer ${publicToken}`)
@@ -245,10 +247,10 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
       .set('Authorization', `Bearer ${publicToken}`)
       .send({
         criteriaScores: {
-          entertainment: 7.5,
-          emotion: 8,
-          likedTheMusic: 9.5,
-          wouldListenAgain: 6.5,
+          scriptDevelopment: 7.5,
+          creativity: 8,
+          synchronism: 9.5,
+          originalityAndMusicality: 6.5,
         },
       })
       .expect(201);

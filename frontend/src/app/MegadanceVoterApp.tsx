@@ -24,55 +24,31 @@ import { VoteConfirmation } from './components/VoteConfirmation';
 import { Ranking } from './components/Ranking';
 import { Artist, Criterion, RankingRow } from './types';
 
-const JUDGE_CRITERIA: Criterion[] = [
+/** Critérios de votação Megadance 2026 (jurado e público). */
+const VOTING_CRITERIA: Criterion[] = [
   {
-    id: 'vocalTechnique',
-    name: 'Técnica Vocal',
+    id: 'scriptDevelopment',
+    name: 'Desenvolvimento do Roteiro',
     description:
-      'Afinação, controle de respiração, projeção e domínio vocal',
+      'Clareza, sequência e construção da história apresentada, avaliando a conexão entre as cenas, coerência da mensagem e evolução do tema durante toda a apresentação.',
   },
   {
-    id: 'interpretation',
-    name: 'Interpretação',
-    description: 'Expressividade, emoção e conexão com a música',
+    id: 'creativity',
+    name: 'Criatividade',
+    description:
+      'Originalidade e inovação na construção da apresentação, envolvendo roteiro, coreografias, encenações, transições, figurinos e elementos cênicos.',
   },
   {
-    id: 'stagePresence',
-    name: 'Presença de Palco',
-    description: 'Carisma, performance e interação com o público',
+    id: 'synchronism',
+    name: 'Sincronismo',
+    description:
+      'Harmonia, precisão e alinhamento dos integrantes na execução dos movimentos, transições e marcações durante toda a apresentação.',
   },
   {
-    id: 'originality',
-    name: 'Originalidade',
-    description: 'Criatividade e diferenciação na apresentação',
-  },
-  {
-    id: 'composition',
-    name: 'Composição',
-    description: 'Qualidade da letra, melodia e arranjo musical',
-  },
-];
-
-const PUBLIC_CRITERIA: Criterion[] = [
-  {
-    id: 'entertainment',
-    name: 'Entretenimento',
-    description: 'Quanto você se divertiu com a apresentação',
-  },
-  {
-    id: 'emotion',
-    name: 'Emoção',
-    description: 'Capacidade de te emocionar e tocar o coração',
-  },
-  {
-    id: 'likedTheMusic',
-    name: 'Gostei da Música',
-    description: 'Quanto você gostou da música apresentada',
-  },
-  {
-    id: 'wouldListenAgain',
-    name: 'Ouviria Novamente',
-    description: 'Vontade de ouvir a música novamente',
+    id: 'originalityAndMusicality',
+    name: 'Originalidade e Musicalidade',
+    description:
+      'Capacidade de inovar na apresentação, utilizando a música de forma criativa, coerente e bem conectada aos movimentos, cenas e emoções transmitidas.',
   },
 ];
 
@@ -224,7 +200,7 @@ export function MegadanceVoterApp() {
   }
 
   const voterRole = user.role;
-  const criteria = voterRole === 'JUDGE' ? JUDGE_CRITERIA : PUBLIC_CRITERIA;
+  const criteria = VOTING_CRITERIA;
 
   const menuUser = {
     name: user.displayName,

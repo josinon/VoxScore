@@ -205,10 +205,10 @@ async function installSmokeApiMocks(page: Page, state: SmokeState) {
             publicCompositeAverage: 8.5,
             judgeCriteriaAverages: null,
             publicCriteriaAverages: {
-              entertainment: 8,
-              emotion: 8,
-              likedTheMusic: 9,
-              wouldListenAgain: 9,
+              scriptDevelopment: 8,
+              creativity: 8,
+              synchronism: 9,
+              originalityAndMusicality: 9,
             },
           },
         ],
@@ -229,12 +229,12 @@ async function logoutFromHeader(page: Page) {
   await expect(page).toHaveURL(/\/login$/);
 }
 
-async function rateAllPublicCriteria(page: Page) {
+async function rateAllCriteria(page: Page) {
   const ids = [
-    'entertainment',
-    'emotion',
-    'likedTheMusic',
-    'wouldListenAgain',
+    'scriptDevelopment',
+    'creativity',
+    'synchronism',
+    'originalityAndMusicality',
   ] as const;
   for (const id of ids) {
     await page.getByTestId(`score-btn-${id}-10`).click();
@@ -259,7 +259,7 @@ test.describe('Smoke MVP (mocks API) — T10.1', () => {
       .getByTestId(`artist-card-${CANDIDATE_ID}`)
       .getByRole('button', { name: 'Avaliar' })
       .click();
-    await rateAllPublicCriteria(page);
+    await rateAllCriteria(page);
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
     await expect(page.getByTestId('vote-confirmation')).toBeVisible();
 

@@ -1,19 +1,17 @@
-/** Chaves estáveis do JSON `criteriaScores` para `role === PUBLIC` (README). */
-export const PUBLIC_VOTE_CRITERIA = [
-  'entertainment',
-  'emotion',
-  'likedTheMusic',
-  'wouldListenAgain',
+/** Chaves estáveis do JSON `criteriaScores` (jurado e público — Megadance 2026). */
+export const VOTE_CRITERIA = [
+  'scriptDevelopment',
+  'creativity',
+  'synchronism',
+  'originalityAndMusicality',
 ] as const;
 
-/** Chaves estáveis para `role === JUDGE`. */
-export const JUDGE_VOTE_CRITERIA = [
-  'vocalTechnique',
-  'interpretation',
-  'stagePresence',
-  'originality',
-  'composition',
-] as const;
+/** @deprecated Use {@link VOTE_CRITERIA}; mantido para imports existentes. */
+export const PUBLIC_VOTE_CRITERIA = VOTE_CRITERIA;
 
-export type PublicCriterionKey = (typeof PUBLIC_VOTE_CRITERIA)[number];
-export type JudgeCriterionKey = (typeof JUDGE_VOTE_CRITERIA)[number];
+/** @deprecated Use {@link VOTE_CRITERIA}; mantido para imports existentes. */
+export const JUDGE_VOTE_CRITERIA = VOTE_CRITERIA;
+
+export type VoteCriterionKey = (typeof VOTE_CRITERIA)[number];
+export type PublicCriterionKey = VoteCriterionKey;
+export type JudgeCriterionKey = VoteCriterionKey;

@@ -414,7 +414,7 @@ test.describe('Área administrativa (mocks API)', () => {
     await expect(blockedBtn).toBeDisabled();
   });
 
-  test('admin promove utilizador a JUDGE; sessão mostra cinco critérios', async ({ page }) => {
+  test('admin promove utilizador a JUDGE; sessão mostra quatro critérios', async ({ page }) => {
     const state = createState();
     await installAdminApiMocks(page, state);
 
@@ -436,8 +436,8 @@ test.describe('Área administrativa (mocks API)', () => {
     await page.reload();
 
     await page.getByTestId(`artist-card-${CANDIDATE_ID}`).getByRole('button', { name: 'Avaliar' }).click();
-    await expect(page.getByTestId('criterion-row-vocalTechnique')).toBeVisible();
-    await expect(page.getByTestId('criterion-row-composition')).toBeVisible();
+    await expect(page.getByTestId('criterion-row-scriptDevelopment')).toBeVisible();
+    await expect(page.getByTestId('criterion-row-originalityAndMusicality')).toBeVisible();
   });
 
   test('público: POST /candidates e GET /users devolvem 403', async ({ page }) => {

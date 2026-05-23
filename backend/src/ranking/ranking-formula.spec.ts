@@ -6,19 +6,11 @@ import {
   roundScore4,
 } from './ranking-formula';
 
-const judgeAll = (n: number) => ({
-  vocalTechnique: n,
-  interpretation: n,
-  stagePresence: n,
-  originality: n,
-  composition: n,
-});
-
-const publicAll = (n: number) => ({
-  entertainment: n,
-  emotion: n,
-  likedTheMusic: n,
-  wouldListenAgain: n,
+const allCriteria = (n: number) => ({
+  scriptDevelopment: n,
+  creativity: n,
+  synchronism: n,
+  originalityAndMusicality: n,
 });
 
 describe('ranking-formula (Fase 6)', () => {
@@ -29,27 +21,27 @@ describe('ranking-formula (Fase 6)', () => {
         {
           candidateId: candidate.id,
           userRole: UserRole.JUDGE,
-          criteriaScores: judgeAll(10),
+          criteriaScores: allCriteria(10),
         },
         {
           candidateId: candidate.id,
           userRole: UserRole.JUDGE,
-          criteriaScores: judgeAll(4),
+          criteriaScores: allCriteria(4),
         },
         {
           candidateId: candidate.id,
           userRole: UserRole.PUBLIC,
-          criteriaScores: publicAll(8),
+          criteriaScores: allCriteria(8),
         },
         {
           candidateId: candidate.id,
           userRole: UserRole.PUBLIC,
-          criteriaScores: publicAll(8),
+          criteriaScores: allCriteria(8),
         },
         {
           candidateId: candidate.id,
           userRole: UserRole.PUBLIC,
-          criteriaScores: publicAll(8),
+          criteriaScores: allCriteria(8),
         },
       ];
 
@@ -70,12 +62,12 @@ describe('ranking-formula (Fase 6)', () => {
         {
           candidateId: c.id,
           userRole: UserRole.PUBLIC,
-          criteriaScores: publicAll(6),
+          criteriaScores: allCriteria(6),
         },
         {
           candidateId: c.id,
           userRole: UserRole.PUBLIC,
-          criteriaScores: publicAll(6),
+          criteriaScores: allCriteria(6),
         },
       ];
       const [row] = buildLeaderboard([c], votes);
@@ -90,12 +82,12 @@ describe('ranking-formula (Fase 6)', () => {
         {
           candidateId: c.id,
           userRole: UserRole.JUDGE,
-          criteriaScores: judgeAll(5),
+          criteriaScores: allCriteria(5),
         },
         {
           candidateId: c.id,
           userRole: UserRole.JUDGE,
-          criteriaScores: judgeAll(5),
+          criteriaScores: allCriteria(5),
         },
       ];
       const [row] = buildLeaderboard([c], votes);
@@ -121,17 +113,17 @@ describe('ranking-formula (Fase 6)', () => {
       {
         candidateId: a.id,
         userRole: UserRole.PUBLIC,
-        criteriaScores: publicAll(5),
+        criteriaScores: allCriteria(5),
       },
       {
         candidateId: b.id,
         userRole: UserRole.PUBLIC,
-        criteriaScores: publicAll(9),
+        criteriaScores: allCriteria(9),
       },
       {
         candidateId: c.id,
         userRole: UserRole.PUBLIC,
-        criteriaScores: publicAll(9),
+        criteriaScores: allCriteria(9),
       },
     ];
     const rows = buildLeaderboard([a, b, c], votes);

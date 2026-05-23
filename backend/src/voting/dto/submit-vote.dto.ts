@@ -9,10 +9,10 @@ import { IsObject } from 'class-validator';
 export class SubmitVoteDto {
   @ApiProperty({
     example: {
-      entertainment: 8,
-      emotion: 7,
-      likedTheMusic: 9,
-      wouldListenAgain: 8,
+      scriptDevelopment: 8,
+      creativity: 7,
+      synchronism: 9,
+      originalityAndMusicality: 8,
     },
     description:
       'Mapa critério → nota 1–10 em passos de 0,5 (chaves conforme papel)',
