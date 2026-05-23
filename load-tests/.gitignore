@@ -1,0 +1,8 @@
+tokens.json
+load-test.env
+load-test.config.json
+candidate-id.txt
+user-ids.txt
+seed-load-users.sql
+results/
+*.json.gz

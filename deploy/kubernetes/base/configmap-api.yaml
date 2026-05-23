@@ -15,3 +15,6 @@ data:
   BOOTSTRAP_ADMIN_DISPLAY_NAME: Administrator
   # Alinhar com o URL público do Ingress do frontend (mesmo host que `/` ou host dedicado).
   CORS_ORIGINS: https://megadance.lab6.cloud
+  # POST /candidates/:id/votes — pedidos por IP por janela (ms). Predefinição no código: 30 / 60000.
+  THROTTLE_VOTES_LIMIT: '10000'
+  THROTTLE_VOTES_TTL_MS: '60000'

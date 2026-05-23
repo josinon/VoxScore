@@ -1,0 +1,7 @@
+{
+  "baseUrl": "https://megadance.lab6.cloud",
+  "candidateId": "cole-aqui-o-uuid-de-candidate-id.txt",
+  "tokensFile": "tokens.json",
+  "scenario": "unique",
+  "maxVus": 300
+}
