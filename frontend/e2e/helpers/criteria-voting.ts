@@ -1,4 +1,5 @@
 import { expect, type Page } from '@playwright/test';
+import { formatVoteScore } from '../../src/lib/vote-score-format';
 
 export const VOTING_CRITERION_IDS = [
   'scriptDevelopment',
@@ -7,12 +8,7 @@ export const VOTING_CRITERION_IDS = [
   'originalityAndMusicality',
 ] as const;
 
-function formatScoreDisplay(score: number): string {
-  const snapped = Math.round(score * 2) / 2;
-  return snapped.toFixed(1).replace('.', ',');
-}
-
-/** Define nota via botões + visíveis (alinha com a UI actual do slider). */
+/** Define nota via botões + (alinha com {@link formatVoteScore} na UI). */
 export async function setCriterionScore(
   page: Page,
   criterionId: string,
@@ -27,7 +23,7 @@ export async function setCriterionScore(
   for (let i = 0; i < stepsFromMin; i++) {
     await increase.click();
   }
-  await expect(row).toContainText(formatScoreDisplay(targetScore));
+  await expect(row).toContainText(formatVoteScore(targetScore));
 }
 
 export async function rateAllCriteria(

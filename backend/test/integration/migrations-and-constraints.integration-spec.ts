@@ -2,6 +2,7 @@ import dataSource from '../../src/database/data-source';
 import { Candidate } from '../../src/entities/candidate.entity';
 import { User } from '../../src/entities/user.entity';
 import { Vote } from '../../src/entities/vote.entity';
+import { ensureVotesUserCandidateUnique } from '../helpers/ensure-votes-unique-constraint';
 
 const shouldRun = Boolean(process.env.DATABASE_URL);
 const describeOrSkip = shouldRun ? describe : describe.skip;
@@ -12,6 +13,7 @@ describeOrSkip('Migrações e constraints de persistência (integração)', () =
     if (!dataSource.isInitialized) {
       await dataSource.initialize();
     }
+    await ensureVotesUserCandidateUnique(dataSource);
   });
 
   afterAll(async () => {

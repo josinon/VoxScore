@@ -6,6 +6,7 @@ import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
 import { resolveAdminEmail } from './helpers/e2e-admin';
+import { ensureVotesUserCandidateUnique } from './helpers/ensure-votes-unique-constraint';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 import { VOTE_CRITERIA } from '../src/voting/voting.constants';
@@ -64,6 +65,7 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
     server = app.getHttpServer() as Server;
 
     const ds = app.get(DataSource);
+    await ensureVotesUserCandidateUnique(ds);
     const adminEmail = await resolveAdminEmail(ds);
 
     const publicEmail = `vote-pub-${Date.now()}@voxscore.test`;

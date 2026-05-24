@@ -212,7 +212,7 @@ test.describe('Jornada do eleitor (API mock)', () => {
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
 
     await expect(page.getByRole('alert')).toContainText(
-      'Já existe um voto teu para este candidato',
+      'Você já votou neste candidato',
     );
   });
 
