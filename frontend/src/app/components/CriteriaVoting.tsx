@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, ChevronLeft, Minus, Plus } from 'lucide-react';
+import { Check, ChevronLeft, Minus, Plus, Star } from 'lucide-react';
 import { formatVoteScore } from '../../lib/vote-score-format';
 import { Slider } from './ui/slider';
 
@@ -30,9 +30,7 @@ interface CriteriaVotingProps {
 const SCORE_MIN = 1;
 const SCORE_MAX = 10;
 const SCORE_STEP = 0.5;
-/** Posição inicial do slider antes de o utilizador escolher nota (0 = sem avaliação). */
 const SLIDER_MIN = 0;
-const STAR_COUNT = 10;
 
 function clampScore(value: number): number {
   const steps = Math.round(value / SCORE_STEP);
@@ -43,40 +41,10 @@ function clampScore(value: number): number {
   return Math.round(clamped * 10) / 10;
 }
 
-function starFillState(
-  starIndex: number,
-  score: number,
-): 'empty' | 'half' | 'full' {
-  const whole = starIndex + 1;
-  if (score >= whole) {
-    return 'full';
+function lightHaptic(): void {
+  if (typeof navigator !== 'undefined' && navigator.vibrate) {
+    navigator.vibrate(8);
   }
-  if (score >= whole - SCORE_STEP) {
-    return 'half';
-  }
-  return 'empty';
-}
-
-function ScoreStar({
-  fill,
-}: {
-  fill: 'empty' | 'half' | 'full';
-}) {
-  const base = 'w-6 h-6';
-  if (fill === 'empty') {
-    return <Star className={`${base} fill-none text-gray-200`} />;
-  }
-  if (fill === 'full') {
-    return <Star className={`${base} fill-amber-400 text-amber-400`} />;
-  }
-  return (
-    <span className={`relative inline-block ${base}`}>
-      <Star className={`${base} fill-none text-gray-200`} />
-      <span className="absolute inset-0 w-1/2 overflow-hidden">
-        <Star className={`${base} fill-amber-400 text-amber-400`} />
-      </span>
-    </span>
-  );
 }
 
 function CriterionScorePicker({
@@ -89,91 +57,98 @@ function CriterionScorePicker({
   onChange: (score: number) => void;
 }) {
   const sliderValue = value ?? SLIDER_MIN;
+  const rated = value !== undefined;
+
+  const setScore = (next: number, haptic = false) => {
+    const wasUnrated = value === undefined;
+    onChange(clampScore(next));
+    if (haptic && wasUnrated) {
+      lightHaptic();
+    }
+  };
 
   const adjust = (delta: number) => {
     if (value === undefined) {
-      onChange(SCORE_MIN);
+      setScore(SCORE_MIN, true);
       return;
     }
-    onChange(clampScore(value + delta));
+    setScore(value + delta);
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center gap-4">
+    <div className="space-y-5">
+      <div className="flex flex-col items-center">
+        <span
+          key={rated ? formatVoteScore(value) : 'empty'}
+          className={`inline-block text-5xl font-bold tabular-nums leading-none transition-transform duration-200 ${
+            rated
+              ? 'scale-100 text-purple-600'
+              : 'scale-95 text-gray-300'
+          }`}
+        >
+          {rated ? formatVoteScore(value) : '—'}
+        </span>
+        <span className="mt-1 text-sm text-gray-500">de 10</span>
+        {!rated ? (
+          <p className="mt-2 text-center text-xs text-gray-500">
+            Deslize para dar sua nota
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex items-center gap-3 px-0.5">
         <button
           type="button"
           aria-label="Diminuir nota em 0,5"
           data-testid={`score-decrease-${criterionId}`}
-          disabled={value === undefined || value <= SCORE_MIN}
+          disabled={!rated || value <= SCORE_MIN}
           onClick={() => adjust(-SCORE_STEP)}
-          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-purple-200 bg-white text-purple-700 shadow-sm transition-all hover:border-purple-400 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-purple-200 bg-white text-purple-700 shadow-sm transition-colors hover:border-purple-400 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Minus className="h-6 w-6" />
+          <Minus className="h-5 w-5" />
         </button>
 
-        <div className="flex w-[4.5rem] flex-col items-center">
-          <span
-            className={`inline-block w-full text-center text-4xl font-bold tabular-nums leading-none ${
-              value !== undefined ? 'text-purple-600' : 'text-gray-300'
-            }`}
-          >
-            {value !== undefined ? formatVoteScore(value) : '—'}
-          </span>
-          <span className="mt-1 text-xs text-gray-500">de 10</span>
+        <div className="min-w-0 flex-1 pt-1">
+          <Slider
+            data-testid={`score-slider-${criterionId}`}
+            min={SLIDER_MIN}
+            max={SCORE_MAX}
+            step={SCORE_STEP}
+            value={[sliderValue]}
+            onValueChange={(vals) => {
+              const raw = vals[0] ?? SLIDER_MIN;
+              if (raw < SCORE_MIN) {
+                return;
+              }
+              setScore(raw, true);
+            }}
+            className="[&_[data-slot=slider-track]]:h-4 [&_[data-slot=slider-track]]:bg-purple-100 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-purple-600 [&_[data-slot=slider-range]]:to-pink-600 [&_[data-slot=slider-thumb]]:size-8 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-purple-600 [&_[data-slot=slider-thumb]]:shadow-md"
+            aria-label={`Nota para ${criterionId}`}
+            aria-valuetext={
+              rated
+                ? `${formatVoteScore(value)} de 10`
+                : 'Sem nota'
+            }
+          />
+          <div className="mt-2 flex justify-between text-xs font-medium text-gray-400">
+            <span>1</span>
+            <span>5</span>
+            <span>10</span>
+          </div>
         </div>
 
         <button
           type="button"
           aria-label="Aumentar nota em 0,5"
           data-testid={`score-increase-${criterionId}`}
-          disabled={value !== undefined && value >= SCORE_MAX}
+          disabled={rated && value >= SCORE_MAX}
           onClick={() => adjust(SCORE_STEP)}
-          className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-purple-200 bg-white text-purple-700 shadow-sm transition-all hover:border-purple-400 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-purple-200 bg-white text-purple-700 shadow-sm transition-colors hover:border-purple-400 hover:bg-purple-50 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <Plus className="h-6 w-6" />
+          <Plus className="h-5 w-5" />
         </button>
       </div>
 
-      <div className="px-1">
-        <Slider
-          data-testid={`score-slider-${criterionId}`}
-          min={SLIDER_MIN}
-          max={SCORE_MAX}
-          step={SCORE_STEP}
-          value={[sliderValue]}
-          onValueChange={(vals) => {
-            const raw = vals[0] ?? SLIDER_MIN;
-            if (raw < SCORE_MIN) {
-              return;
-            }
-            onChange(clampScore(raw));
-          }}
-          className="[&_[data-slot=slider-track]]:h-3 [&_[data-slot=slider-track]]:bg-purple-100 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-purple-600 [&_[data-slot=slider-range]]:to-pink-600 [&_[data-slot=slider-thumb]]:size-7 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-purple-600 [&_[data-slot=slider-thumb]]:shadow-md"
-          aria-label={`Nota para ${criterionId}`}
-        />
-        <div className="mt-2 flex justify-between text-xs font-medium text-gray-400">
-          <span>0</span>
-          <span>5</span>
-          <span>10</span>
-        </div>
-      </div>
-
-      {value !== undefined ? (
-        <div
-          className="flex justify-center gap-0.5"
-          aria-hidden
-        >
-          {Array.from({ length: STAR_COUNT }, (_, starIndex) => (
-            <ScoreStar
-              key={starIndex}
-              fill={starFillState(starIndex, value)}
-            />
-          ))}
-        </div>
-      ) : null}
-
-      {/* Atalhos só para testes automatizados (não recebem cliques do utilizador). */}
       <div className="sr-only pointer-events-none" aria-hidden>
         {Array.from(
           { length: (SCORE_MAX - SCORE_MIN) / SCORE_STEP + 1 },
@@ -210,7 +185,8 @@ export function CriteriaVoting({
     setError(null);
   };
 
-  const allCriteriaRated = criteria.every((c) => scores[c.id] !== undefined);
+  const ratedCount = criteria.filter((c) => scores[c.id] !== undefined).length;
+  const allCriteriaRated = ratedCount === criteria.length;
 
   const handleSubmit = async () => {
     if (!allCriteriaRated || submitting) {
@@ -231,26 +207,26 @@ export function CriteriaVoting({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-4 shadow-lg z-10">
-        <div className="max-w-2xl mx-auto">
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-purple-600 to-pink-600 p-4 text-white shadow-lg">
+        <div className="mx-auto max-w-2xl">
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-2 text-white/90 hover:text-white mb-3"
+            className="mb-3 flex items-center gap-2 text-white/90 hover:text-white"
           >
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="h-5 w-5" />
             Voltar
           </button>
           <div className="flex items-center gap-3">
             <img
               src={artist.image}
               alt={artist.name}
-              className="w-16 h-16 rounded-full object-cover border-2 border-white/30"
+              className="h-16 w-16 rounded-full border-2 border-white/30 object-cover"
             />
             <div>
               <h1 className="text-xl font-bold">{artist.name}</h1>
               <p className="text-sm text-white/90">{artist.song}</p>
-              <p className="text-xs text-white/70 mt-1">
+              <p className="mt-1 text-xs text-white/70">
                 {voterRole === 'JUDGE'
                   ? 'Avaliação de Jurado'
                   : 'Avaliação do Público'}
@@ -260,41 +236,55 @@ export function CriteriaVoting({
         </div>
       </div>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
-        <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Avalie os Critérios
+      <main className="mx-auto max-w-2xl px-4 py-6">
+        <div className="mb-6 rounded-xl bg-white p-6 shadow-sm">
+          <h2 className="mb-2 text-xl font-bold text-gray-900">
+            Avalie os critérios
           </h2>
-          <p className="text-gray-600 text-sm">
-            Deslize a barra ou use os botões + e − para definir uma nota de 1 a
-            10, em passos de 0,5.
+          <p className="text-sm text-gray-600">
+            Deslize a barra em cada critério (notas de 1 a 10, em passos de 0,5).
+            Os botões + e − servem para ajustes finos.
           </p>
         </div>
 
-        <div className="space-y-4 mb-6">
+        <div className="mb-6 space-y-4">
           {criteria.map((criterion) => {
             const currentScore = scores[criterion.id];
+            const isRated = currentScore !== undefined;
 
             return (
               <div
                 key={criterion.id}
                 data-testid={`criterion-row-${criterion.id}`}
-                className="bg-white rounded-xl p-6 shadow-sm"
+                className={`rounded-xl bg-white p-6 shadow-sm transition-shadow ${
+                  isRated
+                    ? 'ring-2 ring-purple-200 ring-offset-1'
+                    : 'ring-1 ring-gray-100'
+                }`}
               >
-                <div className="flex items-start justify-between mb-5">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-900 mb-1">
+                <div className="mb-5 flex items-start gap-3">
+                  <div
+                    className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-colors ${
+                      isRated
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-400'
+                    }`}
+                    aria-hidden
+                  >
+                    {isRated ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <span className="text-xs font-bold">?</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="mb-1 font-bold text-gray-900">
                       {criterion.name}
                     </h3>
-                    <p className="text-sm text-gray-600">
+                    <p className="line-clamp-3 text-sm text-gray-600">
                       {criterion.description}
                     </p>
                   </div>
-                  {currentScore !== undefined ? (
-                    <div className="ml-3 shrink-0 min-w-[3.25rem] rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1 text-center text-sm font-bold tabular-nums text-white">
-                      {formatVoteScore(currentScore)}
-                    </div>
-                  ) : null}
                 </div>
 
                 <CriterionScorePicker
@@ -302,30 +292,44 @@ export function CriteriaVoting({
                   value={currentScore}
                   onChange={(score) => handleScoreChange(criterion.id, score)}
                 />
-
-                {currentScore === undefined ? (
-                  <p className="mt-3 text-center text-sm text-gray-500">
-                    Ajuste a nota para este critério
-                  </p>
-                ) : null}
               </div>
             );
           })}
         </div>
 
-        <div className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <div className="flex items-center justify-between mb-4">
+        {allCriteriaRated ? (
+          <div className="mb-6 rounded-xl border border-purple-200 bg-purple-50 p-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-bold text-purple-900">
+              Resumo da sua avaliação
+            </h3>
+            <ul className="space-y-2 text-sm text-purple-900">
+              {criteria.map((c) => (
+                <li
+                  key={c.id}
+                  className="flex items-center justify-between gap-2 border-b border-purple-100 pb-2 last:border-0 last:pb-0"
+                >
+                  <span className="min-w-0 truncate">{c.name}</span>
+                  <span className="shrink-0 font-bold tabular-nums">
+                    {formatVoteScore(scores[c.id]!)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <div className="mb-6 rounded-xl bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="font-bold text-gray-900">Progresso</h3>
             <span className="text-sm text-gray-600">
-              {Object.keys(scores).length} de {criteria.length} critérios
-              avaliados
+              {ratedCount} de {criteria.length} critérios
             </span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
             <div
-              className="bg-gradient-to-r from-purple-600 to-pink-600 h-full transition-all duration-300 rounded-full"
+              className="h-full rounded-full bg-gradient-to-r from-purple-600 to-pink-600 transition-[width] duration-300"
               style={{
-                width: `${(Object.keys(scores).length / criteria.length) * 100}%`,
+                width: `${(ratedCount / criteria.length) * 100}%`,
               }}
             />
           </div>
@@ -344,21 +348,18 @@ export function CriteriaVoting({
           type="button"
           onClick={() => void handleSubmit()}
           disabled={!allCriteriaRated || submitting}
-          className={`
-            w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2
-            ${
-              allCriteriaRated && !submitting
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }
-          `}
+          className={`flex w-full items-center justify-center gap-2 rounded-xl py-4 text-lg font-bold transition-all ${
+            allCriteriaRated && !submitting
+              ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:from-purple-700 hover:to-pink-700'
+              : 'cursor-not-allowed bg-gray-300 text-gray-500'
+          }`}
         >
-          <Star className="w-5 h-5" />
+          <Star className="h-5 w-5" />
           {submitting
             ? 'Enviando…'
             : allCriteriaRated
               ? 'Confirmar Avaliação'
-              : 'Complete Todos os Critérios'}
+              : 'Complete todos os critérios'}
         </button>
       </main>
     </div>
