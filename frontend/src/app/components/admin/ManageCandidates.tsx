@@ -122,7 +122,7 @@ export function ManageCandidates({
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar candidato?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir candidato?</AlertDialogTitle>
             <AlertDialogDescription>
               Esta ação remove o candidato no servidor. Votos associados deixam de contar no
               ranking conforme a regra da API.
@@ -136,7 +136,7 @@ export function ManageCandidates({
               disabled={submitting}
               onClick={() => void confirmDelete()}
             >
-              {submitting ? 'A eliminar…' : 'Eliminar'}
+              {submitting ? 'Excluindo…' : 'Excluir'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -285,7 +285,7 @@ export function ManageCandidates({
               >
                 <Save className="w-5 h-5" />
                 {submitting
-                  ? 'A guardar…'
+                  ? 'Salvando…'
                   : editingId !== null
                     ? 'Salvar Alterações'
                     : 'Adicionar Candidato'}

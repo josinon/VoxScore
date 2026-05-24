@@ -102,7 +102,7 @@ export function Ranking({
       <main className="max-w-4xl mx-auto px-4 py-6">
         {loading && rankings.length === 0 ? (
           <div className="mb-4 rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-600">
-            A carregar…
+            Carregando…
           </div>
         ) : null}
 
@@ -144,8 +144,8 @@ export function Ranking({
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
             <Eye className="w-5 h-5 shrink-0 mt-0.5" />
             <p>
-              Pré-visualização de administrador: vês as notas reais, mas o público
-              ainda só vê as contagens até publicares os resultados.
+              Pré-visualização de administrador: você vê as notas reais, mas o público
+              ainda só vê as contagens até você publicar os resultados.
             </p>
           </div>
         ) : null}

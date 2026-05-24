@@ -26,7 +26,7 @@ export function LoginPage() {
     try {
       await loginWithMockProfile({
         email: email.trim(),
-        displayName: email.trim().split('@')[0] || 'Utilizador',
+        displayName: email.trim().split('@')[0] || 'Usuário',
       });
     } catch (e) {
       if (e instanceof ApiError) {
@@ -36,7 +36,7 @@ export function LoginPage() {
             : `Erro ${e.status}: ${e.message}`,
         );
       } else {
-        setError('Falha ao iniciar sessão.');
+        setError('Falha ao fazer login.');
       }
     } finally {
       setBusy(false);

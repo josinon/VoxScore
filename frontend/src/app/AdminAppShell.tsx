@@ -110,7 +110,7 @@ export function AdminAppShell() {
       setUsersError(
         e instanceof ApiError
           ? e.message
-          : 'Não foi possível carregar os utilizadores.',
+          : 'Não foi possível carregar os usuários.',
       );
     } finally {
       setUsersLoading(false);
@@ -252,11 +252,11 @@ export function AdminAppShell() {
   const handleDeleteArtist = async (id: string) => {
     try {
       await deleteCandidate(id);
-      toast.success('Candidato eliminado.');
+      toast.success('Candidato excluído.');
       await loadCandidates();
     } catch (e) {
       toast.error(
-        e instanceof ApiError ? e.message : 'Erro ao eliminar candidato.',
+        e instanceof ApiError ? e.message : 'Erro ao excluir candidato.',
       );
     }
   };
@@ -267,11 +267,11 @@ export function AdminAppShell() {
   ) => {
     try {
       await patchUser(id, body);
-      toast.success('Utilizador atualizado.');
+      toast.success('Usuário atualizado.');
       await loadUsers();
     } catch (e) {
       toast.error(
-        e instanceof ApiError ? e.message : 'Erro ao atualizar utilizador.',
+        e instanceof ApiError ? e.message : 'Erro ao atualizar usuário.',
       );
     }
   };
@@ -315,7 +315,7 @@ export function AdminAppShell() {
       users={users}
       usersLoading={usersLoading}
       usersError={usersError}
-      onLoadUsers={() => void loadUsers()}
+      onLoadUsers={loadUsers}
       onPatchUser={handlePatchUser}
     />
   );

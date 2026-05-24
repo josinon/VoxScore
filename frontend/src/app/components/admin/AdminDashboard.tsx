@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Music, Users, Settings, TrendingUp, LayoutDashboard } from 'lucide-react';
 import type { MeResponse, UserRole } from '../../../lib/api';
 import { UserMenu } from '../UserMenu';
@@ -62,11 +62,18 @@ export function AdminDashboard({
   onSetResultsPublished,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const usersTabLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (activeTab === 'users') {
-      onLoadUsers();
+    if (activeTab !== 'users') {
+      usersTabLoadedRef.current = false;
+      return;
     }
+    if (usersTabLoadedRef.current) {
+      return;
+    }
+    usersTabLoadedRef.current = true;
+    onLoadUsers();
   }, [activeTab, onLoadUsers]);
 
   const tabs = [
@@ -177,7 +184,7 @@ export function AdminDashboard({
                 >
                   <Users className="w-6 h-6 mb-2" />
                   <h3 className="font-bold mb-1">Gerenciar Usuários</h3>
-                  <p className="text-sm text-white/90">Papéis e estado</p>
+                  <p className="text-sm text-white/90">Perfis e status</p>
                 </button>
 
                 <button
@@ -196,16 +203,16 @@ export function AdminDashboard({
               <h3 className="text-xl font-bold mb-4">Instruções de Operação</h3>
               <div className="space-y-2 text-sm">
                 <p>
-                  ✓ <strong>Candidatos:</strong> criar, editar ou eliminar na API; candidatos
+                  ✓ <strong>Candidatos:</strong> criar, editar ou excluir na API; candidatos
                   inativos não aparecem na votação pública.
                 </p>
                 <p>
-                  ✓ <strong>Usuários:</strong> alterar papel (Público / Jurado / Admin) e
-                  desativar conta; o último administrador não pode ser despromovido.
+                  ✓ <strong>Usuários:</strong> alterar perfil (Público / Jurado / Admin) e
+                  desativar conta; o último administrador não pode ser rebaixado.
                 </p>
                 <p>
                   ✓ <strong>Votação:</strong> abrir ou fechar por candidato (sincronizado com a
-                  área do eleitor em tempo real).
+                  área do votante em tempo real).
                 </p>
                 <p>
                   ✓ <strong>Ranking:</strong> publicar resultados quando quiser revelar notas e
@@ -235,7 +242,7 @@ export function AdminDashboard({
             ) : null}
             {listLoading ? (
               <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
-                A carregar candidatos…
+                Carregando candidatos…
               </div>
             ) : (
               <ManageCandidates
@@ -253,7 +260,7 @@ export function AdminDashboard({
             users={users}
             loading={usersLoading}
             error={usersError}
-            onRetry={() => onLoadUsers()}
+            onRetry={onLoadUsers}
             onPatchUser={onPatchUser}
           />
         )}

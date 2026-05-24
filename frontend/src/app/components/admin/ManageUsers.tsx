@@ -131,15 +131,15 @@ export function ManageUsers({
             <AlertDialogDescription>
               {pending?.kind === 'role' ? (
                 <>
-                  Alterar o papel de <strong>{pending.displayName}</strong> para{' '}
+                  Alterar o perfil de <strong>{pending.displayName}</strong> para{' '}
                   <strong>{pending.nextRole}</strong>?
                 </>
               ) : pending ? (
                 <>
                   {pending.nextDisabled
-                    ? 'Desativar esta conta? O utilizador deixa de poder iniciar sessão.'
+                    ? 'Desativar esta conta? O usuário não poderá mais fazer login.'
                     : 'Reativar esta conta?'}
-                  <span className="block mt-2">Utilizador: {pending.displayName}</span>
+                  <span className="block mt-2">Usuário: {pending.displayName}</span>
                 </>
               ) : null}
             </AlertDialogDescription>
@@ -151,7 +151,7 @@ export function ManageUsers({
               disabled={submitting}
               onClick={() => void runPending()}
             >
-              {submitting ? 'A guardar…' : 'Confirmar'}
+              {submitting ? 'Salvando…' : 'Confirmar'}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -159,7 +159,7 @@ export function ManageUsers({
 
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Gerenciar Usuários</h2>
-        <p className="text-gray-600">Total: {users.length} utilizador(es) — dados do servidor</p>
+        <p className="text-gray-600">Total: {users.length} usuário(s) — dados do servidor</p>
       </div>
 
       {error ? (
@@ -180,7 +180,7 @@ export function ManageUsers({
 
       {loading ? (
         <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
-          A carregar utilizadores…
+          Carregando usuários…
         </div>
       ) : null}
 
@@ -205,7 +205,7 @@ export function ManageUsers({
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Papel</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Perfil</label>
               <select
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value as typeof filterRole)}
@@ -239,7 +239,7 @@ export function ManageUsers({
       <div className="space-y-4">
         {!loading && filteredUsers.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center">
-            <p className="text-gray-500 mb-2">Nenhum utilizador encontrado.</p>
+            <p className="text-gray-500 mb-2">Nenhum usuário encontrado.</p>
             {searchQuery ? (
               <button
                 type="button"

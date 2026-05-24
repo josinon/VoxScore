@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Star, ChevronLeft, Minus, Plus } from 'lucide-react';
+import { formatVoteScore } from '../../lib/vote-score-format';
 import { Slider } from './ui/slider';
 
 interface Criterion {
@@ -32,12 +33,6 @@ const SCORE_STEP = 0.5;
 /** Posição inicial do slider antes de o utilizador escolher nota (0 = sem avaliação). */
 const SLIDER_MIN = 0;
 const STAR_COUNT = 10;
-
-function formatVoteScore(score: number): string {
-  return Number.isInteger(score)
-    ? String(score)
-    : score.toFixed(1).replace('.', ',');
-}
 
 function clampScore(value: number): number {
   const steps = Math.round(value / SCORE_STEP);
@@ -117,15 +112,10 @@ function CriterionScorePicker({
           <Minus className="h-6 w-6" />
         </button>
 
-        <div
-          className="flex min-w-[5.5rem] flex-col items-center"
-          aria-live="polite"
-        >
+        <div className="flex w-[4.5rem] flex-col items-center">
           <span
-            className={`text-4xl font-bold tabular-nums leading-none ${
-              value !== undefined
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent'
-                : 'text-gray-300'
+            className={`inline-block w-full text-center text-4xl font-bold tabular-nums leading-none ${
+              value !== undefined ? 'text-purple-600' : 'text-gray-300'
             }`}
           >
             {value !== undefined ? formatVoteScore(value) : '—'}
@@ -301,7 +291,7 @@ export function CriteriaVoting({
                     </p>
                   </div>
                   {currentScore !== undefined ? (
-                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full font-bold ml-3 shrink-0">
+                    <div className="ml-3 shrink-0 min-w-[3.25rem] rounded-full bg-gradient-to-r from-purple-600 to-pink-600 px-3 py-1 text-center text-sm font-bold tabular-nums text-white">
                       {formatVoteScore(currentScore)}
                     </div>
                   ) : null}
@@ -365,7 +355,7 @@ export function CriteriaVoting({
         >
           <Star className="w-5 h-5" />
           {submitting
-            ? 'A enviar…'
+            ? 'Enviando…'
             : allCriteriaRated
               ? 'Confirmar Avaliação'
               : 'Complete Todos os Critérios'}

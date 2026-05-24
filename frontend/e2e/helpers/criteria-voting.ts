@@ -8,9 +8,8 @@ export const VOTING_CRITERION_IDS = [
 ] as const;
 
 function formatScoreDisplay(score: number): string {
-  return Number.isInteger(score)
-    ? String(score)
-    : score.toFixed(1).replace('.', ',');
+  const snapped = Math.round(score * 2) / 2;
+  return snapped.toFixed(1).replace('.', ',');
 }
 
 /** Define nota via botões + visíveis (alinha com a UI actual do slider). */

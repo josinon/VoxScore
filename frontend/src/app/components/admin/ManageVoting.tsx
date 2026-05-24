@@ -32,7 +32,7 @@ export function ManageVoting({
 
       {listLoading ? (
         <div className="rounded-xl border border-gray-200 bg-white p-6 text-center text-gray-600">
-          A carregar candidatos…
+          Carregando candidatos…
         </div>
       ) : null}
 
@@ -50,9 +50,19 @@ export function ManageVoting({
               Resultados do ranking
             </h3>
             <p className="text-sm text-gray-600">
-              {resultsPublished
-                ? 'O público vê notas, pódio e vencedores no ranking.'
-                : 'O público vê apenas quantas pessoas avaliaram cada candidato (sem notas).'}
+              {resultsPublished ? (
+                <>
+                  <span className="font-medium text-green-800">Resultados publicados agora.</span>{' '}
+                  No app do público, o ranking mostra notas, médias por critério e a
+                  colocação final (1º, 2º, 3º…).
+                </>
+              ) : (
+                <>
+                  <span className="font-medium text-amber-800">Resultados ainda não publicados.</span>{' '}
+                  No app do público, cada candidato aparece só com a quantidade de
+                  avaliações recebidas — sem notas e sem ordem de classificação.
+                </>
+              )}
             </p>
           </div>
           <button

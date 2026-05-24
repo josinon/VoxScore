@@ -121,7 +121,7 @@ export function MegadanceVoterApp() {
   }, [loadCandidates]);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || votingArtist) {
       return;
     }
     const ms = voterCandidatesPollingMs();
@@ -132,7 +132,7 @@ export function MegadanceVoterApp() {
       void loadCandidates({ silent: true });
     }, ms);
     return () => window.clearInterval(id);
-  }, [user, loadCandidates]);
+  }, [user, votingArtist, loadCandidates]);
 
   const loadRanking = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -222,12 +222,12 @@ export function MegadanceVoterApp() {
         addVotedCandidateId(user.id, artistId);
         setVotedIds((prev) => new Set(prev).add(artistId));
         throw new Error(
-          'Já existe um voto teu para este candidato. Não é possível votar novamente.',
+          'Você já votou neste candidato. Não é possível votar novamente.',
         );
       }
       if (e instanceof ApiError && e.status === 403) {
         throw new Error(
-          'Votação fechada para este candidato ou não tens permissão para votar.',
+          'Votação fechada para este candidato ou você não tem permissão para votar.',
         );
       }
       if (e instanceof ApiError) {
@@ -245,7 +245,7 @@ export function MegadanceVoterApp() {
       setShowConfirmation(true);
     }
     setVotingArtist(null);
-    toast.success('Voto registado com sucesso.');
+    toast.success('Voto registrado com sucesso.');
     void loadCandidates();
     if (showRanking) {
       void loadRanking();
@@ -315,7 +315,7 @@ export function MegadanceVoterApp() {
 
         {listLoading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
-            A carregar candidatos…
+            Carregando candidatos…
           </div>
         ) : null}
 
