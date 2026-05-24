@@ -17,9 +17,9 @@ import {
   type UserRole,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
-import { isRealtimeEnabled } from '../lib/env';
+import { isAdminRealtimeEnabled } from '../lib/env';
 import { mapRankingEntriesToRows } from '../lib/ranking-map';
-import { connectVoterRealtime } from '../lib/realtime-client';
+import { connectAdminRealtime } from '../lib/realtime-client';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { Ranking } from './components/Ranking';
 import type { Artist, RankingRow } from './types';
@@ -163,14 +163,14 @@ export function AdminAppShell() {
     if (!user || !showRanking) {
       return;
     }
-    return connectVoterRealtime({
+    return connectAdminRealtime({
       onCandidatesChanged: () => void loadCandidates(),
       onRankingChanged: () => void loadRanking(),
     });
   }, [user, showRanking, loadCandidates, loadRanking]);
 
   useEffect(() => {
-    if (!showRanking || isRealtimeEnabled()) {
+    if (!showRanking || isAdminRealtimeEnabled()) {
       return;
     }
     const id = window.setInterval(() => {

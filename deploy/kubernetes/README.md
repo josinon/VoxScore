@@ -74,7 +74,7 @@ flowchart TB
 | [`frontend/Dockerfile`](../../frontend/Dockerfile) | Build Vite + nginx com `try_files` para SPA. |
 | [`base/`](./base/) | Namespace `voxscore`, ConfigMap da API, Deployments, Services, Ingress (host de exemplo). |
 | [`base/job-migrate.yaml`](./base/job-migrate.yaml) | **Job** de migrações TypeORM — aplicar manualmente (não está no `kustomization` por defeito, para evitar conflitos em `kubectl apply` repetidos). |
-| [`overlays/with-postgres/`](./overlays/with-postgres/) | Postgres in-cluster com Secrets (`postgres-credentials` + `voxscore-api`), PVC 10 Gi, initContainer na API; alinhado ao `base` (2 réplicas, migrações via Job). TLS: patch Ingress + [`clusterissuer-letsencrypt-prod.yaml`](./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml) (apply manual). |
+| [`overlays/with-postgres/`](./overlays/with-postgres/) | Postgres + **Redis** in-cluster, Secrets (`postgres-credentials` + `voxscore-api`), PVC 10 Gi, initContainers na API (Postgres + Redis); alinhado ao `base` (várias réplicas API, migrações via Job). `REDIS_URL=redis://redis:6379` no ConfigMap. TLS: patch Ingress + [`clusterissuer-letsencrypt-prod.yaml`](./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml) (apply manual). |
 | [`overlays/local/`](./overlays/local/) | Postgres in-cluster para demo, secret de demonstração, `AUTH_GOOGLE_MOCK_ENABLED=true`, Ingress em `voxscore.local`. |
 
 ### Overlay `with-postgres` — PostgreSQL dentro do Kubernetes
@@ -137,7 +137,10 @@ Para testes sem limite de taxa da AC de produção, crie um `ClusterIssuer` à p
 | `JWT_SECRET`, OAuth Google | **Secret** `voxscore-api` | Ver [`backend/.env.example`](../../backend/.env.example). |
 | `CORS_ORIGINS` | **ConfigMap** | Origem exata do browser (URL do Ingress). |
 | `THROTTLE_*` (opcional) | **ConfigMap** | Ver `backend/.env.example`. |
+| `DATABASE_POOL_MAX` / `DATABASE_POOL_MIN` | **ConfigMap** | Pool `pg` **por pod** da API. Com **4 réplicas** no `base` e `DATABASE_POOL_MAX=20` → até ~80 conexões de app; o Postgres no overlay `with-postgres` usa `max_connections=120` e limites **2 CPU / 3 Gi** RAM. |
 | `VITE_*` | **Build** do frontend | Opcional: com o mesmo host no Ingress, pode omitir `VITE_API_BASE_URL` e usar caminhos relativos `/api/v1`. |
+
+**Dimensionamento Postgres (`with-postgres`):** StatefulSet com `requests` 500m CPU / 2 Gi RAM e `limits` **2 CPU / 3 Gi**; `shared_buffers=768MB`. Se aumentar `replicas` da API, mantenha `(réplicas × DATABASE_POOL_MAX) + margem (~25)` abaixo de `max_connections` do Postgres (ou suba `max_connections` e RAM do Postgres em conjunto).
 
 ### Injeção de configuração nos Pods da API
 

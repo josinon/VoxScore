@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { rateAllCriteria } from './helpers/criteria-voting';
 
 /** T10.1 — smoke ponta a ponta com API mockada (README / demo). */
 
@@ -227,18 +228,6 @@ async function logoutFromHeader(page: Page) {
   await page.getByTestId('user-menu-trigger').click();
   await page.getByTestId('logout-btn').click();
   await expect(page).toHaveURL(/\/login$/);
-}
-
-async function rateAllCriteria(page: Page) {
-  const ids = [
-    'scriptDevelopment',
-    'creativity',
-    'synchronism',
-    'originalityAndMusicality',
-  ] as const;
-  for (const id of ids) {
-    await page.getByTestId(`score-btn-${id}-10`).click();
-  }
 }
 
 test.describe('Smoke MVP (mocks API) — T10.1', () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate } from 'react-router';
 import { toast } from 'sonner';
 import { useAuth } from '../auth/AuthProvider';
@@ -10,8 +10,10 @@ import {
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
 import { mapRankingEntriesToRows } from '../lib/ranking-map';
-import { isRealtimeEnabled } from '../lib/env';
-import { connectVoterRealtime } from '../lib/realtime-client';
+import {
+  voterCandidatesPollingMs,
+  voterRankingPollingMs,
+} from '../lib/env';
 import {
   addVotedCandidateId,
   readVotedCandidateIds,
@@ -86,9 +88,6 @@ export function MegadanceVoterApp() {
   const [rankingError, setRankingError] = useState<string | null>(null);
   const [resultsPublished, setResultsPublished] = useState(false);
 
-  const showRankingRef = useRef(false);
-  showRankingRef.current = showRanking;
-
   useEffect(() => {
     if (!user?.id) {
       return;
@@ -96,8 +95,10 @@ export function MegadanceVoterApp() {
     setVotedIds(readVotedCandidateIds(user.id));
   }, [user?.id]);
 
-  const loadCandidates = useCallback(async () => {
-    setListLoading(true);
+  const loadCandidates = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setListLoading(true);
+    }
     try {
       const rows = await fetchCandidates();
       setCandidates(rows.map(mapCandidateToArtist));
@@ -109,43 +110,34 @@ export function MegadanceVoterApp() {
           : 'Não foi possível carregar os candidatos.';
       setListError(msg);
     } finally {
-      setListLoading(false);
+      if (!options?.silent) {
+        setListLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
-    setListLoading(true);
-    void (async () => {
-      try {
-        const rows = await fetchCandidates();
-        if (cancelled) {
-          return;
-        }
-        setCandidates(rows.map(mapCandidateToArtist));
-        setListError(null);
-      } catch (e) {
-        if (cancelled) {
-          return;
-        }
-        const msg =
-          e instanceof ApiError
-            ? e.message
-            : 'Não foi possível carregar os candidatos.';
-        setListError(msg);
-      } finally {
-        if (!cancelled) {
-          setListLoading(false);
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    void loadCandidates();
+  }, [loadCandidates]);
 
-  const loadRanking = useCallback(async () => {
-    setRankingLoading(true);
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+    const ms = voterCandidatesPollingMs();
+    if (ms === 0) {
+      return;
+    }
+    const id = window.setInterval(() => {
+      void loadCandidates({ silent: true });
+    }, ms);
+    return () => window.clearInterval(id);
+  }, [user, loadCandidates]);
+
+  const loadRanking = useCallback(async (options?: { silent?: boolean }) => {
+    if (!options?.silent) {
+      setRankingLoading(true);
+    }
     try {
       const res = await fetchRanking();
       setResultsPublished(res.resultsPublished);
@@ -160,7 +152,9 @@ export function MegadanceVoterApp() {
           : 'Não foi possível carregar o ranking.';
       setRankingError(msg);
     } finally {
-      setRankingLoading(false);
+      if (!options?.silent) {
+        setRankingLoading(false);
+      }
     }
   }, [candidates]);
 
@@ -172,28 +166,18 @@ export function MegadanceVoterApp() {
   }, [showRanking, loadRanking]);
 
   useEffect(() => {
-    if (!showRanking || isRealtimeEnabled()) {
+    if (!showRanking) {
+      return;
+    }
+    const ms = voterRankingPollingMs();
+    if (ms === 0) {
       return;
     }
     const id = window.setInterval(() => {
-      void loadRanking();
-    }, 8000);
+      void loadRanking({ silent: true });
+    }, ms);
     return () => window.clearInterval(id);
   }, [showRanking, loadRanking]);
-
-  useEffect(() => {
-    if (!user || (user.role !== 'PUBLIC' && user.role !== 'JUDGE')) {
-      return;
-    }
-    return connectVoterRealtime({
-      onCandidatesChanged: () => void loadCandidates(),
-      onRankingChanged: () => {
-        if (showRankingRef.current) {
-          void loadRanking();
-        }
-      },
-    });
-  }, [user, loadCandidates, loadRanking]);
 
   if (!user || (user.role !== 'PUBLIC' && user.role !== 'JUDGE')) {
     return <Navigate to="/admin" replace />;
@@ -323,9 +307,9 @@ export function MegadanceVoterApp() {
               : 'Escolha um artista com votação liberada para avaliar'}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            {isRealtimeEnabled()
-              ? 'Atualizações em tempo real via WebSocket (candidatos e ranking).'
-              : 'Tempo real desativado: recarregue a página para ver alterações.'}
+            {voterCandidatesPollingMs() > 0
+              ? `A lista atualiza automaticamente a cada ${Math.round(voterCandidatesPollingMs() / 1000)} s.`
+              : 'Recarregue a página para ver alterações na lista.'}
           </p>
         </div>
 
@@ -383,9 +367,8 @@ export function MegadanceVoterApp() {
         !candidates.some((a) => a.votingOpen) ? (
           <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
             <p className="text-amber-800 text-sm">
-              Nenhuma votação aberta de momento. A lista atualiza em tempo real
-              quando o administrador abrir uma votação
-              {isRealtimeEnabled() ? ' (WebSocket).' : '.'}
+              Nenhuma votação aberta de momento. A lista atualiza
+              automaticamente quando o administrador abrir uma votação.
             </p>
           </div>
         ) : null}

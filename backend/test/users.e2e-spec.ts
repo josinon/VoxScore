@@ -5,6 +5,7 @@ import { App } from 'supertest/types';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
+import { resolveAdminEmail } from './helpers/e2e-admin';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 
@@ -15,8 +16,6 @@ describeOrSkip('Users / auth (e2e) — Fase 2 (T2.2, T2.3)', () => {
   let server: ReturnType<INestApplication['getHttpServer']>;
   let publicUserEmail: string;
   let publicUserId: string;
-  const adminEmail =
-    process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@voxscore.local';
   let adminToken: string;
 
   beforeAll(async () => {
@@ -38,6 +37,7 @@ describeOrSkip('Users / auth (e2e) — Fase 2 (T2.2, T2.3)', () => {
     server = app.getHttpServer();
 
     const ds = app.get(DataSource);
+    const adminEmail = await resolveAdminEmail(ds);
     publicUserEmail = `public-e2e-${Date.now()}@voxscore.test`;
     const saved = await ds.getRepository(User).save({
       email: publicUserEmail,

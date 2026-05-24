@@ -13,6 +13,10 @@ if (inJest) {
   /** E2e não devem falhar se o `.env` local desliga o mock ou o dev token. */
   process.env.AUTH_DEV_TOKEN_ENABLED = 'true';
   process.env.AUTH_GOOGLE_MOCK_ENABLED = 'true';
+  /** Sem Redis nos e2e; debounce 0 para `ranking_changed` imediato no WS. */
+  delete process.env.REDIS_URL;
+  delete process.env.REDIS_REQUIRED;
+  process.env.REALTIME_RANKING_DEBOUNCE_MS = '0';
 } else {
   process.env.AUTH_DEV_TOKEN_ENABLED ??= 'true';
   process.env.AUTH_GOOGLE_MOCK_ENABLED ??= 'true';

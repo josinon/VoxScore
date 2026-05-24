@@ -28,10 +28,14 @@ describeOrSkip('Health (e2e) — T1.1', () => {
       .expect((res) => {
         const body = res.body as {
           status?: string;
-          info?: { database?: { status?: string } };
+          info?: {
+            database?: { status?: string };
+            redis?: { status?: string; message?: string };
+          };
         };
         expect(body.status).toBe('ok');
         expect(body.info?.database?.status).toBe('up');
+        expect(body.info?.redis?.status).toBe('up');
       });
   });
 

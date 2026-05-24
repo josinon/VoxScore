@@ -6,7 +6,7 @@ import { Vote } from '../../src/entities/vote.entity';
 const shouldRun = Boolean(process.env.DATABASE_URL);
 const describeOrSkip = shouldRun ? describe : describe.skip;
 
-describeOrSkip('Fase 1 — persistência e constraints (integração)', () => {
+describeOrSkip('Migrações e constraints de persistência (integração)', () => {
   beforeAll(async () => {
     if (!process.env.DATABASE_URL) return;
     if (!dataSource.isInitialized) {
@@ -46,6 +46,18 @@ describeOrSkip('Fase 1 — persistência e constraints (integração)', () => {
     ).rejects.toThrow();
   });
 
+  it('T1.4a — constraint UQ_votes_user_candidate existe em votes', async () => {
+    const rows: { conname: string }[] = await dataSource.query(
+      `SELECT c.conname
+       FROM pg_constraint c
+       JOIN pg_class t ON t.oid = c.conrelid
+       WHERE t.relname = 'votes'
+         AND c.conname = 'UQ_votes_user_candidate'
+         AND c.contype = 'u'`,
+    );
+    expect(rows).toHaveLength(1);
+  });
+
   it('T1.4 — segundo voto mesmo (user, candidate) viola constraint', async () => {
     const users = dataSource.getRepository(User);
     const candidates = dataSource.getRepository(Candidate);
@@ -82,6 +94,58 @@ describeOrSkip('Fase 1 — persistência e constraints (integração)', () => {
         user,
         candidate,
         criteriaScores: { scriptDevelopment: 9, creativity: 9, synchronism: 9, originalityAndMusicality: 9 },
+      }),
+    ).rejects.toThrow();
+  });
+
+  it('T1.4b — INSERT com stubs user/candidate (caminho do voto) respeita UQ', async () => {
+    const users = dataSource.getRepository(User);
+    const candidates = dataSource.getRepository(Candidate);
+    const votes = dataSource.getRepository(Vote);
+
+    const suffix = Date.now();
+    const user = await users.save({
+      email: `t14b-u-${suffix}@voxscore.test`,
+      displayName: 'Stub voter',
+      role: 'PUBLIC',
+      disabled: false,
+    });
+    const candidate = await candidates.save({
+      name: 'Stub artist',
+      musicTitle: 'Song',
+      genre: 'Pop',
+      bio: 'Bio',
+      photoUrl: 'https://example.com/p.jpg',
+      instagramUrl: null,
+      youtubeUrl: null,
+      votingOpen: true,
+      displayOrder: 0,
+      active: true,
+    });
+
+    const scores = {
+      scriptDevelopment: 8,
+      creativity: 8,
+      synchronism: 8,
+      originalityAndMusicality: 8,
+    };
+
+    await votes.save({
+      user: { id: user.id } as User,
+      candidate: { id: candidate.id } as Candidate,
+      criteriaScores: scores,
+    });
+
+    await expect(
+      votes.save({
+        user: { id: user.id } as User,
+        candidate: { id: candidate.id } as Candidate,
+        criteriaScores: {
+          scriptDevelopment: 9,
+          creativity: 9,
+          synchronism: 9,
+          originalityAndMusicality: 9,
+        },
       }),
     ).rejects.toThrow();
   });

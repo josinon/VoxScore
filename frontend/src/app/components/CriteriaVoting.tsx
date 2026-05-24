@@ -183,8 +183,8 @@ function CriterionScorePicker({
         </div>
       ) : null}
 
-      {/* Atalhos invisíveis para e2e: mantém data-testid score-btn-{id}-{score} */}
-      <div className="sr-only" aria-hidden>
+      {/* Atalhos só para testes automatizados (não recebem cliques do utilizador). */}
+      <div className="sr-only pointer-events-none" aria-hidden>
         {Array.from(
           { length: (SCORE_MAX - SCORE_MIN) / SCORE_STEP + 1 },
           (_, i) => SCORE_MIN + i * SCORE_STEP,

@@ -45,7 +45,7 @@ Candidatos geridos pelo **administrador** na API (nome, música, género, foto, 
 ## 5. Ranking
 
 - Pontuação ponderada: **80% jurados + 20% público**
-- Visualização em tempo real
+- Visualização do ranking com atualização periódica (público/jurado); painel admin com WebSocket em tempo real
 - Pódio visual (troféus para top 3)
 - Detalhamento de votos por categoria
 - Acessível para todos os perfis
@@ -67,8 +67,9 @@ Login (papel definido pelo servidor) → Votação ou painel admin (conforme `ro
 2. **API** — em `backend/`: `cp .env.example .env`, defina `JWT_SECRET`, ative `AUTH_DEV_TOKEN_ENABLED=true` e `AUTH_GOOGLE_MOCK_ENABLED=true` para desenvolvimento com login mock; `npm ci`, `npm run migration:run`, `npm run start:dev`. A API fica em **http://localhost:3000** com prefixo **`/api/v1`**. Saúde (readiness com ping à base): **GET http://localhost:3000/api/v1/health**.
 3. **Frontend** — em `frontend/`: `npm ci`, opcionalmente `cp .env.example .env` (ver `VITE_*`); `npm run dev` (predefinição **http://127.0.0.1:5173**). O proxy Vite encaminha `/api` para a API; defina `VITE_API_BASE_URL` se o browser não usar o mesmo host.
 4. **Login em dev** — com `VITE_SHOW_DEV_LOGIN=true` (predefinição nos e2e), o ecrã de login permite email + OAuth mock; o papel vem do servidor (`GET /users/me`).
-5. **Rate limit** — em rajadas, `POST .../candidates/:id/votes` e rotas de auth sensíveis podem responder **429** (ver variáveis `THROTTLE_*` em [`backend/.env.example`](./backend/.env.example)).
-6. **Smoke (T10.1)** — com a API a correr **ou** só com mocks de rede: `cd frontend && npm run smoke` (Playwright, ficheiro `e2e/smoke.spec.ts`).
+5. **Tempo real** — WebSocket só no **admin**; público/jurado usam polling (`VITE_VOTER_*_POLL_MS` em [`frontend/.env.example`](./frontend/.env.example)).
+6. **Rate limit** — em rajadas, `POST .../candidates/:id/votes` e rotas de auth sensíveis podem responder **429** (ver variáveis `THROTTLE_*` em [`backend/.env.example`](./backend/.env.example)).
+7. **Smoke (T10.1)** — com a API a correr **ou** só com mocks de rede: `cd frontend && npm run smoke` (Playwright, ficheiro `e2e/smoke.spec.ts`).
 
 ## Desenvolvimento e implantação
 

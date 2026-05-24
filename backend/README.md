@@ -97,6 +97,7 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 - **`POST /api/v1/candidates/:id/votes`** — utilizador autenticado com papel **`PUBLIC`** ou **`JUDGE`**. Corpo JSON `{ "criteriaScores": { ... } }` com **exactamente** as chaves do papel e valores de **1 a 10 em passos de 0,5** (ex.: `7`, `7.5`, `8`).
   - **`PUBLIC`** e **`JUDGE`** (4 chaves cada): `scriptDevelopment`, `creativity`, `synchronism`, `originalityAndMusicality`.
+  - Caminho optimizado: o **`JwtStrategy`** já valida utilizador ativo (sem `SELECT` extra no voto); cache de `active` / `votingOpen` por candidato (**`VOTE_CANDIDATE_CACHE_TTL_MS`**, predefinição `8000` ms, Redis se `REDIS_URL`); gravação com **`INSERT`** síncrono e unique `(user, candidate)`.
 - **`PATCH /api/v1/candidates/:id/voting`** — apenas **ADMIN**; corpo `{ "open": boolean }` para abrir ou fechar a votação desse candidato (equivalente semântico a atualizar `votingOpen`).
 
 #### Matriz de erros (votação)
@@ -124,6 +125,27 @@ Sem as três variáveis Google preenchidas, **`GET /api/v1/auth/google`** e o ca
 
 - **`GET ws://<host>/api/v1/ws?token=<JWT>`** (ou `wss://` em HTTPS) — ligação **WebSocket** autenticada com o **mesmo JWT** que o REST (`token` na query; o browser não envia cabeçalhos custom na mão inicial).
 - Mensagens JSON push (ex.: `{ "type": "candidates_changed" }`, `{ "type": "ranking_changed" }`) após alterações a candidatos (CRUD / `votingOpen`) ou após novo voto. O cliente deve refazer **`GET /candidates`** / **`GET /ranking`** conforme o evento.
+- **`ranking_changed`** é **agrupado** (debounce): vários votos ou publicações de ranking no intervalo **`REALTIME_RANKING_DEBOUNCE_MS`** (predefinição `1500` ms; `0` = push imediato) geram no máximo **um** broadcast. A SPA aplica debounce adicional em `GET /ranking` via **`VITE_REALTIME_RANKING_DEBOUNCE_MS`** (predefinição `750` ms).
+
+### Redis (`REDIS_URL`) — várias réplicas da API
+
+- Com **`REDIS_URL`** definido: cache de ranking e eventos WebSocket são **partilhados** entre todos os pods.
+- **`REDIS_REQUIRED=true`** (predefinição quando há URL): o arranque e **`GET /health`** falham se o Redis não responder.
+- Sem Redis: fallback em memória **apenas no pod local** (adequado a dev com uma réplica).
+
+No overlay [`deploy/kubernetes/overlays/with-postgres/`](../deploy/kubernetes/overlays/with-postgres/) há um Deployment **Redis 7** (`redis://redis:6379`) com `notify-keyspace-events Ex` para debounce de `ranking_changed` no cluster.
+
+### Cache do ranking (`GET /ranking`)
+
+- Chaves Redis `voxscore:ranking:scores` e `voxscore:ranking:counts` (ou memória local sem Redis).
+- Duas vistas: **`scores`** (notas completas — ADMIN ou resultados publicados) e **`counts`** (só contagens — público/jurado antes da publicação). Num miss, ambas são calculadas numa única passagem à base.
+- **`RANKING_CACHE_TTL_MS`** (predefinição `3000`): TTL por entrada; **`RANKING_CACHE_ENABLED=false`** ou TTL `0` desliga o cache.
+- Invalidação imediata (`DEL` no Redis) após **novo voto**, **publicar/ocultar resultados** ou **CRUD de candidatos** que altere o leaderboard.
+
+### Tempo real multi-pod
+
+- `candidates_changed` e `ranking_changed` (após debounce) são publicados no canal Redis `voxscore:realtime`; cada pod envia o evento aos seus clientes WebSocket locais.
+- Debounce de ranking com vários pods: chave `voxscore:realtime:ranking:debounce` com TTL renovado (`REALTIME_RANKING_DEBOUNCE_MS`); quando a chave expira, **todos** os pods notificam os respetivos clientes.
 - Implementação: [`src/realtime/`](./src/realtime/) (`WsAdapter` em [`main.ts`](./src/main.ts)).
 - Testes: unitários [`src/realtime/realtime-hub.service.spec.ts`](./src/realtime/realtime-hub.service.spec.ts), [`src/realtime/realtime.gateway.spec.ts`](./src/realtime/realtime.gateway.spec.ts); e2e [`test/realtime.e2e-spec.ts`](./test/realtime.e2e-spec.ts) (com `DATABASE_URL`).
 
@@ -138,6 +160,8 @@ Com credenciais Google reais e `OAUTH_FRONTEND_REDIRECT_URL` apontando para o SP
 ## Migrações
 
 Por defeito a API aplica migrações pendentes ao **arrancar** (`TYPEORM_MIGRATIONS_RUN` omitido ou `true`), para que `npm run start:dev` funcione sem correr `migration:run` antes. Defina `TYPEORM_MIGRATIONS_RUN=false` em Kubernetes com várias réplicas e use um **Job** para migrar (ver [`deploy/kubernetes/README.md`](../deploy/kubernetes/README.md)).
+
+**Pool PostgreSQL:** `DATABASE_POOL_MAX` / `DATABASE_POOL_MIN` (predefinições `20` / `2` por processo) limitam o pool `pg` do TypeORM. Em produção com várias réplicas, dimensione para não esgotar `max_connections` do servidor (ver ConfigMap em [`deploy/kubernetes/base/configmap-api.yaml`](../deploy/kubernetes/base/configmap-api.yaml)).
 
 ```bash
 npm run migration:run
@@ -172,8 +196,8 @@ Orquestração (Kubernetes, Docker Compose da app, etc.): use **`GET /api/v1/hea
 | Script | Descrição |
 |--------|-----------|
 | `npm run test` | Testes unitários (Jest), incl. **T6.1–T6.2** (`ranking-formula.spec.ts`) |
-| `npm run test:integration` | Fase 1 (T1.2–T1.4) + Fase 2 (T2.1) — exige `DATABASE_URL`; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
-| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.6 (votação)**, **T6.3 (ranking)**, **T10.3 (rate limit em votos)** — exige `DATABASE_URL`, migrações e env conforme CI |
+| `npm run test:integration` | `migrations-and-constraints.integration-spec.ts` (T1.2–T1.4a/b) + `phase2.integration-spec.ts` (T2.1) — exige `DATABASE_URL`; valida schema (`UQ_votes_user_candidate`) e INSERT com stubs; `test/integration/load-env.ts` define `JWT_SECRET` e `AUTH_DEV_TOKEN_ENABLED` por defeito para Jest |
+| `npm run test:e2e` | T1.1 (health), T2.2–T2.3, T3.1–T3.3 (mock OAuth), **T4.1–T4.5 (candidatos)**, **T5.1–T5.7 (votação)**, **T6.3 (ranking)**, **T10.3 (rate limit em votos)** — exige `DATABASE_URL`, migrações e env conforme CI; executa **em série** (`--runInBand`) para evitar flakiness no rate limit |
 
 Ordem sugerida com base de dados vazia:
 

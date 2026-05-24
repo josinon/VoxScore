@@ -5,6 +5,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
+import { resolveAdminEmail } from './helpers/e2e-admin';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 
@@ -46,8 +47,7 @@ describeOrSkip('Rate limit on votes (e2e) — T10.3', () => {
     server = app.getHttpServer() as Server;
 
     const ds = app.get(DataSource);
-    const adminEmail =
-      process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@voxscore.local';
+    const adminEmail = await resolveAdminEmail(ds);
 
     const ta = await request(server)
       .post('/api/v1/auth/dev/token')

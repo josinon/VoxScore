@@ -1,5 +1,10 @@
 import { getAccessToken } from './auth-storage';
-import { getApiBaseUrl, isRealtimeEnabled } from './env';
+import { debounce } from './debounce';
+import {
+  getApiBaseUrl,
+  isAdminRealtimeEnabled,
+  realtimeRankingDebounceMs,
+} from './env';
 
 export type VoterRealtimeMessage =
   | { type: 'candidates_changed' }
@@ -26,13 +31,23 @@ export function getRealtimeWsUrlForToken(accessToken: string): string {
 
 const RECONNECT_MS = 3000;
 
-export function connectVoterRealtime(handlers: {
+/**
+ * WebSocket em tempo real — **apenas painel ADMIN**.
+ * Público e jurado não devem chamar (usam polling em `MegadanceVoterApp`).
+ */
+export function connectAdminRealtime(handlers: {
   onCandidatesChanged: () => void;
   onRankingChanged: () => void;
 }): () => void {
-  if (!isRealtimeEnabled()) {
+  if (!isAdminRealtimeEnabled()) {
     return () => {};
   }
+
+  const rankingDebounceMs = realtimeRankingDebounceMs();
+  const onRankingChanged =
+    rankingDebounceMs === 0
+      ? handlers.onRankingChanged
+      : debounce(handlers.onRankingChanged, rankingDebounceMs);
 
   let ws: WebSocket | null = null;
   let reconnectTimer: ReturnType<typeof setTimeout> | undefined;
@@ -73,7 +88,7 @@ export function connectVoterRealtime(handlers: {
           handlers.onCandidatesChanged();
         }
         if (msg.type === 'ranking_changed') {
-          handlers.onRankingChanged();
+          onRankingChanged();
         }
       } catch {
         /* ignore malformed */
@@ -93,7 +108,13 @@ export function connectVoterRealtime(handlers: {
   return () => {
     cancelled = true;
     clearReconnect();
+    if ('cancel' in onRankingChanged) {
+      onRankingChanged.cancel();
+    }
     ws?.close();
     ws = null;
   };
 }
+
+/** @deprecated Use `connectAdminRealtime` — mantido para imports antigos. */
+export const connectVoterRealtime = connectAdminRealtime;

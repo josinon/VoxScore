@@ -5,10 +5,12 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { InitialSchema1736820000000 } from './database/migrations/1736820000000-InitialSchema';
 import { EventSettings1736900000000 } from './database/migrations/1736900000000-EventSettings';
+import { RestoreVotesUserCandidateUnique1737100000000 } from './database/migrations/1737100000000-RestoreVotesUserCandidateUnique';
 import { Candidate } from './entities/candidate.entity';
 import { EventSettings } from './entities/event-settings.entity';
 import { User } from './entities/user.entity';
 import { Vote } from './entities/vote.entity';
+import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { UsersModule } from './users/users.module';
 import { CandidatesModule } from './candidates/candidates.module';
@@ -16,10 +18,15 @@ import { VotingModule } from './voting/voting.module';
 import { RankingModule } from './ranking/ranking.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { HttpRequestLoggerInterceptor } from './common/logging/http-request-logger.interceptor';
+import {
+  databasePoolMax,
+  databasePoolMin,
+} from './database/database-pool-env';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    RedisModule,
     ThrottlerModule.forRoot([
       {
         name: 'default',
@@ -42,12 +49,22 @@ import { HttpRequestLoggerInterceptor } from './common/logging/http-request-logg
               }
             : false,
           entities: [User, Candidate, Vote, EventSettings],
-          migrations: [InitialSchema1736820000000, EventSettings1736900000000],
+          migrations: [
+            InitialSchema1736820000000,
+            EventSettings1736900000000,
+            RestoreVotesUserCandidateUnique1737100000000,
+          ],
           migrationsTableName: 'typeorm_migrations',
           /** Predefinição: aplica migrações pendentes ao arrancar. Em K8s com várias réplicas use `TYPEORM_MIGRATIONS_RUN=false` e um Job. */
           migrationsRun:
             config.get<string>('TYPEORM_MIGRATIONS_RUN') !== 'false',
           synchronize: false,
+          extra: {
+            max: databasePoolMax(),
+            min: databasePoolMin(),
+            idleTimeoutMillis: 30_000,
+            connectionTimeoutMillis: 5_000,
+          },
         };
       },
       inject: [ConfigService],

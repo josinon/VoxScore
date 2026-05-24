@@ -18,6 +18,12 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
+          args:
+            - postgres
+            - -c
+            - max_connections=120
+            - -c
+            - shared_buffers=768MB
           ports:
             - containerPort: 5432
               name: postgres
@@ -47,11 +53,11 @@ spec:
             periodSeconds: 5
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 500m
+              memory: 2Gi
             limits:
               cpu: '2'
-              memory: 1Gi
+              memory: 3Gi
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data

@@ -3,7 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserRole } from '../common/user-role.enum';
 import { Candidate } from '../entities/candidate.entity';
+import { RankingService } from '../ranking/ranking.service';
 import { RealtimeHubService } from '../realtime/realtime-hub.service';
+import { VoteCandidateCacheService } from '../voting/vote-candidate-cache.service';
 import { CandidateResponseDto } from './dto/candidate-response.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
@@ -14,7 +16,17 @@ export class CandidatesService {
     @InjectRepository(Candidate)
     private readonly candidates: Repository<Candidate>,
     private readonly realtime: RealtimeHubService,
+    private readonly ranking: RankingService,
+    private readonly voteCandidateCache: VoteCandidateCacheService,
   ) {}
+
+  private async invalidateRankingCache(): Promise<void> {
+    await this.ranking.invalidateLeaderboardCache();
+  }
+
+  private async invalidateVoteCandidateCache(candidateId: string): Promise<void> {
+    await this.voteCandidateCache.invalidate(candidateId);
+  }
 
   toResponse(c: Candidate): CandidateResponseDto {
     const dto = new CandidateResponseDto();
@@ -79,6 +91,7 @@ export class CandidatesService {
       active: dto.active ?? true,
     });
     const saved = await this.candidates.save(entity);
+    await this.invalidateRankingCache();
     this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }
@@ -93,6 +106,8 @@ export class CandidatesService {
     }
     this.candidates.merge(found, dto);
     const saved = await this.candidates.save(found);
+    await this.invalidateVoteCandidateCache(id);
+    await this.invalidateRankingCache();
     this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }
@@ -102,6 +117,8 @@ export class CandidatesService {
     if (res.affected === 0) {
       throw new NotFoundException('Candidate not found');
     }
+    await this.invalidateVoteCandidateCache(id);
+    await this.invalidateRankingCache();
     this.realtime.broadcastCandidatesChanged();
   }
 
@@ -113,6 +130,7 @@ export class CandidatesService {
     }
     found.votingOpen = open;
     const saved = await this.candidates.save(found);
+    await this.invalidateVoteCandidateCache(id);
     this.realtime.broadcastCandidatesChanged();
     return this.toResponse(saved);
   }

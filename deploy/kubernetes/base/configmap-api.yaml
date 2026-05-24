@@ -18,3 +18,12 @@ data:
   # POST /candidates/:id/votes — pedidos por IP por janela (ms). Predefinição no código: 30 / 60000.
   THROTTLE_VOTES_LIMIT: '10000'
   THROTTLE_VOTES_TTL_MS: '60000'
+  # Agrupa pushes `ranking_changed` após rajadas de votos (ms).
+  REALTIME_RANKING_DEBOUNCE_MS: '1500'
+  RANKING_CACHE_ENABLED: 'true'
+  RANKING_CACHE_TTL_MS: '3000'
+  VOTE_CANDIDATE_CACHE_ENABLED: 'true'
+  VOTE_CANDIDATE_CACHE_TTL_MS: '8000'
+  # Pool pg por pod da API (4 réplicas no base → ~80 conexões; Postgres max_connections=120 no overlay).
+  DATABASE_POOL_MAX: '20'
+  DATABASE_POOL_MIN: '2'

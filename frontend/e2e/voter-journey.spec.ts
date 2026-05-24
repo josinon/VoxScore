@@ -1,4 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
+import {
+  rateAllCriteria,
+  setCriterionScore,
+  VOTING_CRITERION_IDS,
+} from './helpers/criteria-voting';
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
 const CANDIDATE_ID = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
@@ -72,18 +77,6 @@ async function loginAsPublic(page: Page) {
   await expect(page).toHaveURL(/\/votacao$/);
 }
 
-async function rateAllCriteria(page: Page) {
-  const ids = [
-    'scriptDevelopment',
-    'creativity',
-    'synchronism',
-    'originalityAndMusicality',
-  ] as const;
-  for (const id of ids) {
-    await page.getByTestId(`score-btn-${id}-10`).click();
-  }
-}
-
 test.describe('Jornada do eleitor (API mock)', () => {
   test('permite nota com passo de 0,5 (ex.: 8,5)', async ({ page }) => {
     await installAuthMocks(page);
@@ -115,14 +108,12 @@ test.describe('Jornada do eleitor (API mock)', () => {
       .getByRole('button', { name: 'Avaliar' })
       .click();
 
-    await page.getByTestId('score-btn-scriptDevelopment-8.5').click();
-    await expect(
-      page.getByTestId('criterion-row-scriptDevelopment'),
-    ).toContainText('8,5');
-
-    const ids = ['creativity', 'synchronism', 'originalityAndMusicality'] as const;
-    for (const id of ids) {
-      await page.getByTestId(`score-btn-${id}-10`).click();
+    await setCriterionScore(page, 'scriptDevelopment', 8.5);
+    for (const id of VOTING_CRITERION_IDS) {
+      if (id === 'scriptDevelopment') {
+        continue;
+      }
+      await setCriterionScore(page, id, 10);
     }
     await page.getByRole('button', { name: 'Confirmar Avaliação' }).click();
     await expect(page.getByTestId('vote-confirmation')).toBeVisible();

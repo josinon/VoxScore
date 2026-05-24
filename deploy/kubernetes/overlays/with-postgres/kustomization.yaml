@@ -15,6 +15,8 @@ resources:
   - ../../base
   - postgres-statefulset.yaml
   - postgres-service.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
 
 secretGenerator:
   - name: postgres-credentials
@@ -22,7 +24,7 @@ secretGenerator:
       disableNameSuffixHash: true
     literals:
       - POSTGRES_USER=voxscore
-      - POSTGRES_PASSWORD=voxscoreink8s
+      - POSTGRES_PASSWORD=voxscore-in-k8s-change-me
       - POSTGRES_DB=voxscore
   - name: voxscore-api
     options:
@@ -37,12 +39,13 @@ secretGenerator:
 
 patches:
   - path: patch-deployment-api.yaml
+  - path: patch-configmap-redis.yaml
   - path: patch-ingress-cert-manager.yaml
 
 images:
   - name: josinon/voxscore-api
     newName: josinon/voxscore-api
-    newTag: "0.0.1"
+    newTag: "0.0.6"
   - name: josinon/voxscore-frontend
     newName: josinon/voxscore-frontend
-    newTag: "0.0.1"
+    newTag: "0.0.6"

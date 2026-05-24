@@ -5,6 +5,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
+import { resolveAdminEmail } from './helpers/e2e-admin';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 import { VOTE_CRITERIA } from '../src/voting/voting.constants';
@@ -43,8 +44,6 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
   let adminToken: string;
   let publicToken: string;
   let judgeToken: string;
-  const adminEmail =
-    process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@voxscore.local';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -65,6 +64,7 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
     server = app.getHttpServer() as Server;
 
     const ds = app.get(DataSource);
+    const adminEmail = await resolveAdminEmail(ds);
 
     const publicEmail = `vote-pub-${Date.now()}@voxscore.test`;
     await ds.getRepository(User).save({
@@ -254,6 +254,38 @@ describeOrSkip('Voting (e2e) — Fase 5 (T5.1–T5.6)', () => {
         },
       })
       .expect(201);
+
+    await request(server)
+      .delete(`/api/v1/candidates/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .expect(204);
+  });
+
+  it('T5.7 — cache candidato: após fechar votação, voto imediato → 403', async () => {
+    const create = await request(server)
+      .post('/api/v1/candidates')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(validCandidate('T5.7', { votingOpen: true }))
+      .expect(201);
+    const id = (create.body as { id: string }).id;
+
+    await request(server)
+      .post(`/api/v1/candidates/${id}/votes`)
+      .set('Authorization', `Bearer ${publicToken}`)
+      .send({ criteriaScores: publicScores() })
+      .expect(201);
+
+    await request(server)
+      .patch(`/api/v1/candidates/${id}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ votingOpen: false })
+      .expect(200);
+
+    await request(server)
+      .post(`/api/v1/candidates/${id}/votes`)
+      .set('Authorization', `Bearer ${publicToken}`)
+      .send({ criteriaScores: publicScores() })
+      .expect(403);
 
     await request(server)
       .delete(`/api/v1/candidates/${id}`)

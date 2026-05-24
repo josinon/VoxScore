@@ -8,6 +8,7 @@ import { AppModule } from '../src/app.module';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 import { configureNestWs } from './configure-nest-ws';
+import { resolveAdminEmail } from './helpers/e2e-admin';
 
 const describeOrSkip = process.env.DATABASE_URL ? describe : describe.skip;
 
@@ -82,8 +83,6 @@ describeOrSkip('Realtime WebSocket (e2e)', () => {
   let httpBase: string;
   let adminToken: string;
   let publicToken: string;
-  const adminEmail =
-    process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@voxscore.local';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -106,6 +105,7 @@ describeOrSkip('Realtime WebSocket (e2e)', () => {
     httpBase = await app.getUrl();
 
     const ds = app.get(DataSource);
+    const adminEmail = await resolveAdminEmail(ds);
     const publicEmail = `ws-pub-${Date.now()}@voxscore.test`;
     await ds.getRepository(User).save({
       email: publicEmail,

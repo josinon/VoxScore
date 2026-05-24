@@ -4,9 +4,48 @@ export function getApiBaseUrl(): string {
   return raw?.replace(/\/$/, '') ?? '';
 }
 
-/** Quando `false`, a SPA não abre WebSocket (útil em e2e sem servidor WS). */
+/** Kill switch global (ex.: e2e). Quando `false`, o admin também deixa de usar WebSocket. */
 export function isRealtimeEnabled(): boolean {
   return import.meta.env.VITE_REALTIME_ENABLED !== 'false';
+}
+
+/** WebSocket só no painel admin; público e jurado usam polling HTTP. */
+export function isAdminRealtimeEnabled(): boolean {
+  return isRealtimeEnabled();
+}
+
+/** Intervalo de polling da lista de candidatos (público/jurado). `0` = desligado. */
+export function voterCandidatesPollingMs(): number {
+  const raw = import.meta.env.VITE_VOTER_CANDIDATES_POLL_MS as
+    | string
+    | undefined;
+  const n = parseInt(raw ?? '10000', 10);
+  if (!Number.isFinite(n) || n < 0) {
+    return 10000;
+  }
+  return n;
+}
+
+/** Intervalo de polling do ranking quando aberto (público/jurado). `0` = desligado. */
+export function voterRankingPollingMs(): number {
+  const raw = import.meta.env.VITE_VOTER_RANKING_POLL_MS as string | undefined;
+  const n = parseInt(raw ?? '8000', 10);
+  if (!Number.isFinite(n) || n < 0) {
+    return 8000;
+  }
+  return n;
+}
+
+/** Debounce de `loadRanking` após `ranking_changed` (ms). `0` = sem debounce no cliente. */
+export function realtimeRankingDebounceMs(): number {
+  const raw = import.meta.env.VITE_REALTIME_RANKING_DEBOUNCE_MS as
+    | string
+    | undefined;
+  const n = parseInt(raw ?? '750', 10);
+  if (!Number.isFinite(n) || n < 0) {
+    return 750;
+  }
+  return n;
 }
 
 export function getOAuthRedirectOrigin(): string {

@@ -5,6 +5,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { AppModule } from '../src/app.module';
 import { configureNestWs } from './configure-nest-ws';
+import { resolveAdminEmail } from './helpers/e2e-admin';
 import { UserRole } from '../src/common/user-role.enum';
 import { User } from '../src/entities/user.entity';
 
@@ -30,8 +31,6 @@ describeOrSkip('Candidates (e2e) — Fase 4 (T4.1–T4.5)', () => {
   let server: Server;
   let publicToken: string;
   let adminToken: string;
-  const adminEmail =
-    process.env.BOOTSTRAP_ADMIN_EMAIL ?? 'admin@voxscore.local';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -52,6 +51,7 @@ describeOrSkip('Candidates (e2e) — Fase 4 (T4.1–T4.5)', () => {
     server = app.getHttpServer() as Server;
 
     const ds = app.get(DataSource);
+    const adminEmail = await resolveAdminEmail(ds);
     const publicEmail = `cand-pub-${Date.now()}@voxscore.test`;
     await ds.getRepository(User).save({
       email: publicEmail,

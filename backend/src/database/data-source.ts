@@ -6,6 +6,7 @@ import { User } from '../entities/user.entity';
 import { Vote } from '../entities/vote.entity';
 import { InitialSchema1736820000000 } from './migrations/1736820000000-InitialSchema';
 import { EventSettings1736900000000 } from './migrations/1736900000000-EventSettings';
+import { RestoreVotesUserCandidateUnique1737100000000 } from './migrations/1737100000000-RestoreVotesUserCandidateUnique';
 
 loadEnv({ path: process.env.DOTENV_CONFIG_PATH ?? '.env', quiet: true });
 
@@ -22,7 +23,11 @@ export const dataSourceOptions: DataSourceOptions = {
   url: process.env.DATABASE_URL,
   ssl,
   entities: [User, Candidate, Vote, EventSettings],
-  migrations: [InitialSchema1736820000000, EventSettings1736900000000],
+  migrations: [
+    InitialSchema1736820000000,
+    EventSettings1736900000000,
+    RestoreVotesUserCandidateUnique1737100000000,
+  ],
   migrationsTableName: 'typeorm_migrations',
 };
 

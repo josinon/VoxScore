@@ -11,6 +11,7 @@ import { UserRole } from '../common/user-role.enum';
 import { Candidate } from '../entities/candidate.entity';
 import { User } from '../entities/user.entity';
 import { Vote } from '../entities/vote.entity';
+import { RankingService } from '../ranking/ranking.service';
 import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import {
   JUDGE_VOTE_CRITERIA,
@@ -22,6 +23,10 @@ import {
   VOTE_SCORE_MIN,
   VOTE_SCORE_STEP,
 } from './vote-score';
+import {
+  VoteCandidateCacheService,
+  type VoteCandidateSnapshot,
+} from './vote-candidate-cache.service';
 
 const PG_UNIQUE_VIOLATION = '23505';
 
@@ -32,9 +37,9 @@ export class VotingService {
     private readonly votes: Repository<Vote>,
     @InjectRepository(Candidate)
     private readonly candidates: Repository<Candidate>,
-    @InjectRepository(User)
-    private readonly users: Repository<User>,
+    private readonly candidateCache: VoteCandidateCacheService,
     private readonly realtime: RealtimeHubService,
+    private readonly ranking: RankingService,
   ) {}
 
   private allowedCriteriaForRole(role: string): readonly string[] {
@@ -71,6 +76,10 @@ export class VotingService {
     }
   }
 
+  /**
+   * Utilizador já validado pelo `JwtStrategy` (ativo, não desativado).
+   * INSERT síncrono com unique `(user, candidate)`.
+   */
   async submitVote(
     candidateId: string,
     userId: string,
@@ -81,34 +90,19 @@ export class VotingService {
       throw new ForbiddenException('Administrators cannot vote');
     }
 
-    const candidate = await this.candidates.findOne({
-      where: { id: candidateId },
-    });
-    if (!candidate) {
-      throw new NotFoundException('Candidate not found');
-    }
-    if (!candidate.active) {
-      throw new NotFoundException('Candidate not found');
-    }
-    if (!candidate.votingOpen) {
-      throw new ForbiddenException('Voting is closed for this candidate');
-    }
-
-    const user = await this.users.findOne({ where: { id: userId } });
-    if (!user || user.disabled) {
-      throw new ForbiddenException();
-    }
-
     this.validateCriteriaScores(role, criteriaScores);
 
+    const candidate = await this.resolveCandidateForVote(candidateId);
+
     const vote = this.votes.create({
-      user,
-      candidate,
+      user: { id: userId } as User,
+      candidate: { id: candidate.id } as Candidate,
       criteriaScores: { ...criteriaScores },
     });
 
     try {
       const saved = await this.votes.save(vote);
+      await this.ranking.invalidateLeaderboardCache();
       this.realtime.broadcastRankingChanged();
       return saved;
     } catch (e) {
@@ -118,6 +112,39 @@ export class VotingService {
         );
       }
       throw e;
+    }
+  }
+
+  private async resolveCandidateForVote(
+    candidateId: string,
+  ): Promise<VoteCandidateSnapshot> {
+    const cached = await this.candidateCache.get(candidateId);
+    if (cached) {
+      this.assertCandidateAllowsVote(cached);
+      return cached;
+    }
+
+    const row = await this.candidates.findOne({ where: { id: candidateId } });
+    if (!row) {
+      throw new NotFoundException('Candidate not found');
+    }
+
+    const snapshot: VoteCandidateSnapshot = {
+      id: row.id,
+      active: row.active,
+      votingOpen: row.votingOpen,
+    };
+    await this.candidateCache.set(snapshot);
+    this.assertCandidateAllowsVote(snapshot);
+    return snapshot;
+  }
+
+  private assertCandidateAllowsVote(candidate: VoteCandidateSnapshot): void {
+    if (!candidate.active) {
+      throw new NotFoundException('Candidate not found');
+    }
+    if (!candidate.votingOpen) {
+      throw new ForbiddenException('Voting is closed for this candidate');
     }
   }
 
