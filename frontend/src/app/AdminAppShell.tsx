@@ -42,6 +42,7 @@ function artistToCreateBody(a: Omit<Artist, 'id'>): CreateCandidateBody {
     votingOpen: a.votingOpen,
     active: a.active,
     displayOrder: a.displayOrder ?? 0,
+    scorePenalty: a.scorePenalty ?? 0,
   };
 }
 
@@ -57,6 +58,7 @@ function artistToUpdateBody(a: Omit<Artist, 'id'>): Partial<CreateCandidateBody>
     votingOpen: a.votingOpen,
     active: a.active,
     displayOrder: a.displayOrder ?? 0,
+    scorePenalty: a.scorePenalty ?? 0,
   };
 }
 

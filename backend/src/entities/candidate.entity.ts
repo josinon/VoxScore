@@ -43,6 +43,10 @@ export class Candidate {
   @Column({ type: 'boolean', default: true })
   active: boolean;
 
+  /** Desconto aplicado à nota final do ranking (passos de 0,5; 0 = sem penalidade). */
+  @Column({ type: 'double precision', default: 0 })
+  scorePenalty: number;
+
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 

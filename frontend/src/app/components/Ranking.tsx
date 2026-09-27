@@ -1,4 +1,4 @@
-import { Trophy, Medal, Award, TrendingUp, Users, Eye } from 'lucide-react';
+import { Trophy, Medal, Award, TrendingUp, Users, Eye, MinusCircle } from 'lucide-react';
 import type { RankingRow } from '../types';
 
 interface RankingProps {
@@ -22,6 +22,8 @@ export function Ranking({
   adminPreview = false,
 }: RankingProps) {
   const showScores = resultsPublished || adminPreview;
+
+  const hasPenalties = showScores && rankings.some((r) => r.showScores && r.scorePenalty > 0);
 
   const getRankIcon = (rank: number) => {
     if (!showScores || rank < 1) {
@@ -174,6 +176,18 @@ export function Ranking({
                   </p>
                 </div>
               </div>
+              {hasPenalties ? (
+                <div className="flex items-start gap-3 bg-red-50 p-4 rounded-lg md:col-span-2">
+                  <MinusCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Penalidades</p>
+                    <p className="text-gray-600">
+                      Quando aplicável, a nota final é a nota obtida menos a penalidade
+                      administrativa — ambas ficam visíveis no ranking.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
@@ -211,12 +225,28 @@ export function Ranking({
 
                   <div className="text-right flex-shrink-0">
                     {showScores && artist.showScores ? (
-                      <>
-                        <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                          {artist.totalScore.toFixed(1)}
+                      artist.scorePenalty > 0 ? (
+                        <div className="space-y-1" data-testid={`ranking-scores-${artist.artistId}`}>
+                          <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent tabular-nums">
+                            {artist.totalScore.toFixed(1)}
+                          </div>
+                          <p className="text-xs font-semibold text-gray-700">nota final</p>
+                          <p className="text-xs text-gray-500 tabular-nums">
+                            obtida {artist.computedScore.toFixed(1)}
+                            <span className="text-red-600">
+                              {' '}
+                              − {artist.scorePenalty.toFixed(1)}
+                            </span>
+                          </p>
                         </div>
-                        <p className="text-xs text-gray-500">pontos</p>
-                      </>
+                      ) : (
+                        <>
+                          <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            {artist.totalScore.toFixed(1)}
+                          </div>
+                          <p className="text-xs text-gray-500">pontos</p>
+                        </>
+                      )
                     ) : (
                       <>
                         <div
@@ -236,31 +266,58 @@ export function Ranking({
                 </div>
 
                 {showScores && artist.showScores ? (
-                  <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
-                    <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                        <span className="text-xs font-semibold text-gray-600">
-                          Jurados
+                  <>
+                    <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
+                      <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                          <span className="text-xs font-semibold text-gray-600">
+                            Jurados
+                          </span>
+                        </div>
+                        <span className="text-xl font-bold text-gray-900">
+                          {artist.judgeScore.toFixed(1)}
                         </span>
                       </div>
-                      <span className="text-xl font-bold text-gray-900">
-                        {artist.judgeScore.toFixed(1)}
-                      </span>
+
+                      <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                          <span className="text-xs font-semibold text-gray-600">
+                            Público
+                          </span>
+                        </div>
+                        <span className="text-xl font-bold text-gray-900">
+                          {artist.publicScore.toFixed(1)}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                        <span className="text-xs font-semibold text-gray-600">
-                          Público
-                        </span>
+                    {artist.scorePenalty > 0 ? (
+                      <div
+                        className="mt-4 rounded-lg border border-red-200 bg-red-50/80 p-4 text-sm"
+                        data-testid={`ranking-penalty-${artist.artistId}`}
+                      >
+                        <p className="font-semibold text-red-900 mb-2">Detalhe da nota</p>
+                        <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 tabular-nums">
+                          <dt className="text-gray-700">Nota obtida (votos)</dt>
+                          <dd className="text-right font-semibold text-gray-900">
+                            {artist.computedScore.toFixed(1)}
+                          </dd>
+                          <dt className="text-gray-700">Penalidade</dt>
+                          <dd className="text-right font-semibold text-red-700">
+                            −{artist.scorePenalty.toFixed(1)}
+                          </dd>
+                          <dt className="text-gray-900 font-semibold border-t border-red-200 pt-2 mt-1">
+                            Nota final
+                          </dt>
+                          <dd className="text-right font-bold text-gray-900 border-t border-red-200 pt-2 mt-1">
+                            {artist.totalScore.toFixed(1)}
+                          </dd>
+                        </dl>
                       </div>
-                      <span className="text-xl font-bold text-gray-900">
-                        {artist.publicScore.toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
+                    ) : null}
+                  </>
                 ) : (
                   <p className="mt-3 text-center text-xs text-gray-500">
                     {artist.voteCount === 0

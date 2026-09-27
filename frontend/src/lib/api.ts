@@ -102,6 +102,7 @@ export type CandidateDto = {
   votingOpen: boolean;
   displayOrder: number;
   active: boolean;
+  scorePenalty: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -113,6 +114,8 @@ export type RankingEntryDto = {
   voteCount: number;
   judgeCompositeAverage: number | null;
   publicCompositeAverage: number | null;
+  computedScore: number | null;
+  scorePenalty: number | null;
   finalScore: number | null;
   judgeCriteriaAverages: Record<string, number> | null;
   publicCriteriaAverages: Record<string, number> | null;
@@ -218,6 +221,7 @@ export type CreateCandidateBody = {
   votingOpen?: boolean;
   displayOrder?: number;
   active?: boolean;
+  scorePenalty?: number;
 };
 
 export async function createCandidate(

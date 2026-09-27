@@ -13,6 +13,8 @@ export const RANKING_PUBLIC_WEIGHT = 0.2;
 export interface RankingCandidateInput {
   id: string;
   name: string;
+  /** Desconto aplicado à nota calculada (0 = sem penalidade). */
+  scorePenalty?: number;
 }
 
 /** Voto já associado a candidato e papel do votante (para testes e agregação). */
@@ -34,6 +36,13 @@ export interface RankingLeaderboardRow {
    * Com ambos os grupos: `RANKING_JUDGE_WEIGHT * judge + RANKING_PUBLIC_WEIGHT * public`.
    * Só um grupo: usa **só a média desse grupo** (o outro lado não entra como zero — evita penalizar candidatos sem jurados ou sem público).
    * Sem votos: **0**.
+   * Antes de aplicar {@link scorePenalty}.
+   */
+  computedScore: number;
+  /** Desconto administrativo subtraído de {@link computedScore}. */
+  scorePenalty: number;
+  /**
+   * `max(0, computedScore - scorePenalty)`; usado para ordenação do pódio.
    */
   finalScore: number;
   judgeCriteriaAverages: Record<string, number> | null;
@@ -104,12 +113,18 @@ function aggregateCandidate(
     finalRaw = 0;
   }
 
+  const computedScore = roundScore4(finalRaw);
+  const scorePenalty = roundScore4(candidate.scorePenalty ?? 0);
+  const finalScore = roundScore4(Math.max(0, computedScore - scorePenalty));
+
   return {
     candidateId: candidate.id,
     candidateName: candidate.name,
     judgeCompositeAverage,
     publicCompositeAverage,
-    finalScore: roundScore4(finalRaw),
+    computedScore,
+    scorePenalty,
+    finalScore,
     judgeCriteriaAverages:
       judgeVotes.length > 0
         ? criterionAverages(judgeVotes, VOTE_CRITERIA)

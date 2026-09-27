@@ -34,6 +34,13 @@ export class CandidateResponseDto {
   @ApiProperty()
   active!: boolean;
 
+  @ApiProperty({
+    example: 0,
+    description:
+      'Penalidade subtraída da nota final no ranking (0–10, passos de 0,5).',
+  })
+  scorePenalty!: number;
+
   @ApiProperty()
   createdAt!: Date;
 

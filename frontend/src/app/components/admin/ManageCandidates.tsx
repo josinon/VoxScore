@@ -38,6 +38,7 @@ export function ManageCandidates({
     instagram: '',
     youtube: '',
     active: true,
+    scorePenalty: 0,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,6 +55,7 @@ export function ManageCandidates({
       bio: formData.bio,
       votingOpen: existing?.votingOpen ?? false,
       active: formData.active,
+      scorePenalty: formData.scorePenalty,
       displayOrder: existing?.displayOrder ?? 0,
       socialMedia: {
         instagram: formData.instagram || undefined,
@@ -85,6 +87,7 @@ export function ManageCandidates({
       instagram: artist.socialMedia.instagram || '',
       youtube: artist.socialMedia.youtube || '',
       active: artist.active,
+      scorePenalty: artist.scorePenalty ?? 0,
     });
     setShowForm(true);
   };
@@ -112,6 +115,7 @@ export function ManageCandidates({
       instagram: '',
       youtube: '',
       active: true,
+      scorePenalty: 0,
     });
     setEditingId(null);
     setShowForm(false);
@@ -277,6 +281,30 @@ export function ManageCandidates({
               Candidato ativo (visível na lista pública de votação)
             </label>
 
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Penalidade no ranking (opcional)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={10}
+                step={0.5}
+                value={formData.scorePenalty}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    scorePenalty: Number.parseFloat(e.target.value) || 0,
+                  })
+                }
+                className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Valor subtraído da nota final (0 a 10, passos de 0,5). Deixe 0 se não houver
+                penalidade.
+              </p>
+            </div>
+
             <div className="flex gap-3 pt-4">
               <button
                 type="submit"
@@ -345,6 +373,11 @@ export function ManageCandidates({
                         Votação fechada
                       </span>
                     )}
+                    {(artist.scorePenalty ?? 0) > 0 ? (
+                      <span className="text-xs font-semibold bg-red-100 text-red-800 px-2 py-0.5 rounded">
+                        Penalidade −{(artist.scorePenalty ?? 0).toFixed(1)}
+                      </span>
+                    ) : null}
                   </div>
                   <p className="text-gray-600 text-sm truncate mb-1">{artist.song}</p>
                   <span className="inline-block bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-medium">

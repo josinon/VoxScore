@@ -9,6 +9,8 @@ export interface Artist {
   votingOpen: boolean;
   /** Candidato visível na votação pública (`GET /candidates`). */
   active: boolean;
+  /** Penalidade subtraída da nota final no ranking (0 = sem penalidade). */
+  scorePenalty: number;
   displayOrder?: number;
   socialMedia: {
     instagram?: string;
@@ -41,6 +43,11 @@ export interface RankingRow {
   voteCount: number;
   judgeScore: number;
   publicScore: number;
+  /** Nota calculada pelos votos, antes da penalidade. */
+  computedScore: number;
+  /** Penalidade administrativa (0 = nenhuma). */
+  scorePenalty: number;
+  /** Nota final após penalidade (usada no pódio). */
   totalScore: number;
   /** Quando `false`, a UI mostra só `voteCount` (sem notas nem pódio). */
   showScores: boolean;

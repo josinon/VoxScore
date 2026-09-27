@@ -105,6 +105,57 @@ describe('ranking-formula (Fase 6)', () => {
     });
   });
 
+  describe('penalidade administrativa', () => {
+    it('subtrai scorePenalty de computedScore no finalScore', () => {
+      const c = { id: 'c-pen', name: 'Penalized', scorePenalty: 0.5 };
+      const votes = [
+        {
+          candidateId: c.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: allCriteria(8),
+        },
+      ];
+      const [row] = buildLeaderboard([c], votes);
+      expect(row.computedScore).toBe(8);
+      expect(row.scorePenalty).toBe(0.5);
+      expect(row.finalScore).toBe(7.5);
+    });
+
+    it('finalScore não fica negativo', () => {
+      const c = { id: 'c-floor', name: 'Floor', scorePenalty: 2 };
+      const votes = [
+        {
+          candidateId: c.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: allCriteria(1),
+        },
+      ];
+      const [row] = buildLeaderboard([c], votes);
+      expect(row.computedScore).toBe(1);
+      expect(row.finalScore).toBe(0);
+    });
+
+    it('penalidade altera ordem no pódio', () => {
+      const a = { id: 'a', name: 'A', scorePenalty: 0.5 };
+      const b = { id: 'b', name: 'B', scorePenalty: 0 };
+      const votes = [
+        {
+          candidateId: a.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: allCriteria(9),
+        },
+        {
+          candidateId: b.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: allCriteria(8.6),
+        },
+      ];
+      const rows = buildLeaderboard([a, b], votes);
+      expect(rows[0].candidateId).toBe(b.id);
+      expect(rows[1].candidateId).toBe(a.id);
+    });
+  });
+
   it('ordenação: maior score primeiro; empate no mesmo rank', () => {
     const a = { id: 'id-a', name: 'Zebra' };
     const b = { id: 'id-b', name: 'Anna' };

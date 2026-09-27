@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { InitialSchema1736820000000 } from './database/migrations/1736820000000-InitialSchema';
 import { EventSettings1736900000000 } from './database/migrations/1736900000000-EventSettings';
 import { RestoreVotesUserCandidateUnique1737100000000 } from './database/migrations/1737100000000-RestoreVotesUserCandidateUnique';
+import { CandidateScorePenalty1737200000000 } from './database/migrations/1737200000000-CandidateScorePenalty';
 import { Candidate } from './entities/candidate.entity';
 import { EventSettings } from './entities/event-settings.entity';
 import { User } from './entities/user.entity';
@@ -53,6 +54,7 @@ import {
             InitialSchema1736820000000,
             EventSettings1736900000000,
             RestoreVotesUserCandidateUnique1737100000000,
+            CandidateScorePenalty1737200000000,
           ],
           migrationsTableName: 'typeorm_migrations',
           /** Predefinição: aplica migrações pendentes ao arrancar. Em K8s com várias réplicas use `TYPEORM_MIGRATIONS_RUN=false` e um Job. */

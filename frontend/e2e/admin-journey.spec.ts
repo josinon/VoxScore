@@ -31,6 +31,7 @@ type CandidateRow = {
   votingOpen: boolean;
   displayOrder: number;
   active: boolean;
+  scorePenalty: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -58,6 +59,7 @@ function baseCandidate(overrides: Partial<CandidateRow> = {}): CandidateRow {
     votingOpen: true,
     displayOrder: 1,
     active: true,
+    scorePenalty: 0,
     createdAt: '2024-01-01T00:00:00.000Z',
     updatedAt: '2024-01-01T00:00:00.000Z',
     ...overrides,
@@ -322,6 +324,7 @@ async function installAdminApiMocks(page: Page, state: MockState) {
         votingOpen: Boolean(body.votingOpen),
         displayOrder: Number(body.displayOrder ?? 0),
         active: body.active !== false,
+        scorePenalty: Number(body.scorePenalty ?? 0),
         createdAt: '2024-01-04T00:00:00.000Z',
         updatedAt: '2024-01-04T00:00:00.000Z',
       };

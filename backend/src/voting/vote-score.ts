@@ -14,3 +14,19 @@ export function isValidVoteScore(value: number): boolean {
   const reconstructed = steps * VOTE_SCORE_STEP;
   return Math.abs(reconstructed - value) < 1e-9;
 }
+
+/** Penalidade aplicada à nota final: 0 a 10, passos de 0,5. */
+export const SCORE_PENALTY_MIN = 0;
+export const SCORE_PENALTY_MAX = VOTE_SCORE_MAX;
+
+export function isValidScorePenalty(value: number): boolean {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return false;
+  }
+  if (value < SCORE_PENALTY_MIN || value > SCORE_PENALTY_MAX) {
+    return false;
+  }
+  const steps = Math.round(value / VOTE_SCORE_STEP);
+  const reconstructed = steps * VOTE_SCORE_STEP;
+  return Math.abs(reconstructed - value) < 1e-9;
+}

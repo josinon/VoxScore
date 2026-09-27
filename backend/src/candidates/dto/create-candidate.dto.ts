@@ -4,13 +4,16 @@ import {
   IsBoolean,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
+  Max,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
+import { SCORE_PENALTY_MAX, SCORE_PENALTY_MIN } from '../../voting/vote-score';
 
 export class CreateCandidateDto {
   @ApiProperty({ example: 'Nome Artístico' })
@@ -86,4 +89,18 @@ export class CreateCandidateDto {
   @IsBoolean()
   @Type(() => Boolean)
   active?: boolean;
+
+  @ApiPropertyOptional({
+    example: 0.5,
+    description:
+      'Penalidade subtraída da nota final no ranking (0–10, passos de 0,5).',
+    minimum: SCORE_PENALTY_MIN,
+    maximum: SCORE_PENALTY_MAX,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 1 })
+  @Min(SCORE_PENALTY_MIN)
+  @Max(SCORE_PENALTY_MAX)
+  @Type(() => Number)
+  scorePenalty?: number;
 }

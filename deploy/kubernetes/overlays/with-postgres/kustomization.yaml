@@ -45,7 +45,7 @@ patches:
 images:
   - name: josinon/voxscore-api
     newName: josinon/voxscore-api
-    newTag: "0.0.11"
+    newTag: "0.0.16"
   - name: josinon/voxscore-frontend
     newName: josinon/voxscore-frontend
-    newTag: "0.0.11"
+    newTag: "0.0.16"

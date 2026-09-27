@@ -43,6 +43,22 @@ export class RankingEntryDto {
     nullable: true,
     example: 7.4,
   })
+  computedScore: number | null;
+
+  @ApiProperty({
+    description:
+      'Penalidade administrativa subtraída de `computedScore`; null se resultados ocultos.',
+    nullable: true,
+    example: 0.5,
+  })
+  scorePenalty: number | null;
+
+  @ApiProperty({
+    description:
+      'Nota final após penalidade (`max(0, computedScore - scorePenalty)`); null se resultados ocultos.',
+    nullable: true,
+    example: 6.9,
+  })
   finalScore: number | null;
 
   @ApiProperty({

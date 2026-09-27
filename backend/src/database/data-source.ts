@@ -7,6 +7,7 @@ import { Vote } from '../entities/vote.entity';
 import { InitialSchema1736820000000 } from './migrations/1736820000000-InitialSchema';
 import { EventSettings1736900000000 } from './migrations/1736900000000-EventSettings';
 import { RestoreVotesUserCandidateUnique1737100000000 } from './migrations/1737100000000-RestoreVotesUserCandidateUnique';
+import { CandidateScorePenalty1737200000000 } from './migrations/1737200000000-CandidateScorePenalty';
 
 loadEnv({ path: process.env.DOTENV_CONFIG_PATH ?? '.env', quiet: true });
 
@@ -27,6 +28,7 @@ export const dataSourceOptions: DataSourceOptions = {
     InitialSchema1736820000000,
     EventSettings1736900000000,
     RestoreVotesUserCandidateUnique1737100000000,
+    CandidateScorePenalty1737200000000,
   ],
   migrationsTableName: 'typeorm_migrations',
 };

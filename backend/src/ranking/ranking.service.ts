@@ -106,7 +106,11 @@ export class RankingService {
     }
 
     const rows = buildLeaderboard(
-      activeCandidates.map((c) => ({ id: c.id, name: c.name })),
+      activeCandidates.map((c) => ({
+        id: c.id,
+        name: c.name,
+        scorePenalty: Number(c.scorePenalty) || 0,
+      })),
       voteInputs,
     );
 
@@ -119,6 +123,8 @@ export class RankingService {
       e.voteCount = votesForCandidate.length;
       e.judgeCompositeAverage = r.judgeCompositeAverage;
       e.publicCompositeAverage = r.publicCompositeAverage;
+      e.computedScore = r.computedScore;
+      e.scorePenalty = r.scorePenalty;
       e.finalScore = r.finalScore;
       e.judgeCriteriaAverages = r.judgeCriteriaAverages;
       e.publicCriteriaAverages = r.publicCriteriaAverages;
@@ -134,6 +140,8 @@ export class RankingService {
       e.voteCount = votesForCandidate.length;
       e.judgeCompositeAverage = null;
       e.publicCompositeAverage = null;
+      e.computedScore = null;
+      e.scorePenalty = null;
       e.finalScore = null;
       e.judgeCriteriaAverages = null;
       e.publicCriteriaAverages = null;
