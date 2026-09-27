@@ -20,6 +20,6 @@ import { RankingService } from './ranking.service';
   ],
   controllers: [RankingController],
   providers: [RankingService, RankingCacheService, EventSettingsService],
-  exports: [RankingService, RankingCacheService],
+  exports: [RankingService, RankingCacheService, EventSettingsService],
 })
 export class RankingModule {}

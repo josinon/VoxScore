@@ -107,6 +107,8 @@ export type CandidateDto = {
   updatedAt: string;
 };
 
+export type VotingMode = 'JUDGES_AND_PUBLIC' | 'PUBLIC_ONLY' | 'JUDGES_ONLY';
+
 export type RankingEntryDto = {
   rank: number;
   candidateId: string;
@@ -124,6 +126,9 @@ export type RankingEntryDto = {
 export type RankingResponseDto = {
   schemaVersion: 1;
   resultsPublished: boolean;
+  votingMode: VotingMode;
+  judgeWeightPercent: number;
+  publicWeightPercent: number;
   entries: RankingEntryDto[];
 };
 
@@ -185,6 +190,37 @@ export async function setRankingPublished(
     throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
   }
   return JSON.parse(text) as { published: boolean };
+}
+
+export async function setVotingMode(
+  votingMode: VotingMode,
+): Promise<{ votingMode: VotingMode }> {
+  const res = await apiFetch('/ranking/voting-mode', {
+    method: 'PATCH',
+    body: JSON.stringify({ votingMode }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as { votingMode: VotingMode };
+}
+
+export async function setScoreWeights(
+  judgeWeightPercent: number,
+): Promise<{ judgeWeightPercent: number; publicWeightPercent: number }> {
+  const res = await apiFetch('/ranking/score-weights', {
+    method: 'PATCH',
+    body: JSON.stringify({ judgeWeightPercent }),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as {
+    judgeWeightPercent: number;
+    publicWeightPercent: number;
+  };
 }
 
 export type UsersListQuery = {

@@ -1,9 +1,13 @@
 import { Trophy, Medal, Award, TrendingUp, Users, Eye, MinusCircle } from 'lucide-react';
+import type { VotingMode } from '../../lib/api';
 import type { RankingRow } from '../types';
 
 interface RankingProps {
   rankings: RankingRow[];
   resultsPublished: boolean;
+  votingMode?: VotingMode;
+  judgeWeightPercent?: number;
+  publicWeightPercent?: number;
   onClose: () => void;
   loading?: boolean;
   error?: string | null;
@@ -12,9 +16,18 @@ interface RankingProps {
   adminPreview?: boolean;
 }
 
+const MODE_SUBTITLE: Record<VotingMode, string> = {
+  JUDGES_AND_PUBLIC: 'Modo: jurados + público',
+  PUBLIC_ONLY: 'Modo: apenas público',
+  JUDGES_ONLY: 'Modo: apenas jurados',
+};
+
 export function Ranking({
   rankings,
   resultsPublished,
+  votingMode = 'JUDGES_AND_PUBLIC',
+  judgeWeightPercent = 80,
+  publicWeightPercent = 20,
   onClose,
   loading = false,
   error = null,
@@ -22,6 +35,8 @@ export function Ranking({
   adminPreview = false,
 }: RankingProps) {
   const showScores = resultsPublished || adminPreview;
+  const showJudges = votingMode !== 'PUBLIC_ONLY';
+  const showPublic = votingMode !== 'JUDGES_ONLY';
 
   const hasPenalties = showScores && rankings.some((r) => r.showScores && r.scorePenalty > 0);
 
@@ -87,7 +102,9 @@ export function Ranking({
                 <h1 className="text-2xl font-bold">
                   {showScores ? 'Ranking Geral' : 'Avaliações em andamento'}
                 </h1>
-                <p className="text-sm text-white/90">Mega Voz 2026</p>
+                <p className="text-sm text-white/90">
+                  Mega Voz 2026 · {MODE_SUBTITLE[votingMode]}
+                </p>
               </div>
             </div>
             <button
@@ -157,27 +174,69 @@ export function Ranking({
             <h2 className="text-lg font-bold text-gray-900 mb-4">
               Como funciona a pontuação?
             </h2>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
-                <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">Jurados (80%)</p>
-                  <p className="text-gray-600">
-                    Avaliação técnica por critérios profissionais
-                  </p>
+            <div
+              className={`grid gap-4 text-sm ${
+                showJudges && showPublic ? 'md:grid-cols-2' : 'md:grid-cols-1'
+              }`}
+            >
+              {votingMode === 'JUDGES_AND_PUBLIC' ? (
+                <>
+                  <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
+                    <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-gray-900 mb-1">
+                        Jurados ({judgeWeightPercent}%)
+                      </p>
+                      <p className="text-gray-600">
+                        Avaliação técnica por critérios profissionais
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg">
+                    <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-gray-900 mb-1">
+                        Público ({publicWeightPercent}%)
+                      </p>
+                      <p className="text-gray-600">
+                        Votação popular considerando preferências
+                      </p>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+              {votingMode === 'PUBLIC_ONLY' ? (
+                <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg">
+                  <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">
+                      Votação do público (100%)
+                    </p>
+                    <p className="text-gray-600">
+                      A nota final é a média das avaliações do público
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3 bg-blue-50 p-4 rounded-lg">
-                <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-gray-900 mb-1">Público (20%)</p>
-                  <p className="text-gray-600">
-                    Votação popular considerando preferências
-                  </p>
+              ) : null}
+              {votingMode === 'JUDGES_ONLY' ? (
+                <div className="flex items-start gap-3 bg-amber-50 p-4 rounded-lg">
+                  <Award className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">
+                      Avaliação dos jurados (100%)
+                    </p>
+                    <p className="text-gray-600">
+                      A nota final é a média das avaliações dos jurados
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : null}
               {hasPenalties ? (
-                <div className="flex items-start gap-3 bg-red-50 p-4 rounded-lg md:col-span-2">
+                <div
+                  className={`flex items-start gap-3 bg-red-50 p-4 rounded-lg ${
+                    showJudges && showPublic ? 'md:col-span-2' : ''
+                  }`}
+                >
                   <MinusCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-semibold text-gray-900 mb-1">Penalidades</p>
@@ -193,7 +252,7 @@ export function Ranking({
         ) : null}
 
         <div className="space-y-4">
-          {sortedForDisplay.map((artist, index) => {
+          {sortedForDisplay.map((artist) => {
             const podiumSlot =
               showScores && artist.rank >= 1 && artist.rank <= 3
                 ? artist.rank
@@ -267,31 +326,33 @@ export function Ranking({
 
                 {showScores && artist.showScores ? (
                   <>
-                    <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
-                      <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                          <span className="text-xs font-semibold text-gray-600">
-                            Jurados
+                    {votingMode === 'JUDGES_AND_PUBLIC' ? (
+                      <div className="mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-4">
+                        <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Award className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                            <span className="text-xs font-semibold text-gray-600">
+                              Jurados
+                            </span>
+                          </div>
+                          <span className="text-xl font-bold text-gray-900">
+                            {artist.judgeScore.toFixed(1)}
                           </span>
                         </div>
-                        <span className="text-xl font-bold text-gray-900">
-                          {artist.judgeScore.toFixed(1)}
-                        </span>
-                      </div>
 
-                      <div className="bg-white/50 rounded-lg p-3 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          <span className="text-xs font-semibold text-gray-600">
-                            Público
+                        <div className="bg-white/50 rounded-lg p-3 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Users className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                            <span className="text-xs font-semibold text-gray-600">
+                              Público
+                            </span>
+                          </div>
+                          <span className="text-xl font-bold text-gray-900">
+                            {artist.publicScore.toFixed(1)}
                           </span>
                         </div>
-                        <span className="text-xl font-bold text-gray-900">
-                          {artist.publicScore.toFixed(1)}
-                        </span>
                       </div>
-                    </div>
+                    ) : null}
 
                     {artist.scorePenalty > 0 ? (
                       <div

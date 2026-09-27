@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { VotingMode } from '../../common/voting-mode.enum';
 
 export class RankingEntryDto {
   @ApiProperty({
@@ -39,7 +40,7 @@ export class RankingEntryDto {
 
   @ApiProperty({
     description:
-      '80% jurados + 20% público quando ambos existem; null se resultados ocultos.',
+      'Nota calculada pelos votos (pesos do modo combinado quando aplicável); null se resultados ocultos.',
     nullable: true,
     example: 7.4,
   })
@@ -91,6 +92,27 @@ export class RankingResponseDto {
       'Quando `true`, notas e vencedores estão visíveis para público e jurados.',
   })
   resultsPublished: boolean;
+
+  @ApiProperty({
+    enum: VotingMode,
+    example: VotingMode.JUDGES_AND_PUBLIC,
+    description:
+      'Modo do evento: quem vota e como a nota final é calculada.',
+  })
+  votingMode: VotingMode;
+
+  @ApiProperty({
+    example: 80,
+    description:
+      'Peso dos jurados (%) no modo JUDGES_AND_PUBLIC. Público = 100 − este valor.',
+  })
+  judgeWeightPercent: number;
+
+  @ApiProperty({
+    example: 20,
+    description: 'Peso do público (%) no modo JUDGES_AND_PUBLIC.',
+  })
+  publicWeightPercent: number;
 
   @ApiProperty({ type: [RankingEntryDto] })
   entries: RankingEntryDto[];

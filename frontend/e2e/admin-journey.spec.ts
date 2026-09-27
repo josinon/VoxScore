@@ -375,16 +375,74 @@ async function installAdminApiMocks(page: Page, state: MockState) {
     await route.fallback();
   });
 
-  await page.route('**/api/v1/ranking', async (route) => {
-    if (route.request().method() !== 'GET') {
-      await route.fallback();
+  let votingMode = 'JUDGES_AND_PUBLIC';
+  let resultsPublished = false;
+  let judgeWeightPercent = 80;
+
+  await page.route('**/api/v1/ranking**', async (route) => {
+    const method = route.request().method();
+    const url = new URL(route.request().url());
+    const path = url.pathname.replace(/\/$/, '');
+
+    if (method === 'PATCH' && path.endsWith('/ranking/voting-mode')) {
+      const body = route.request().postDataJSON() as { votingMode?: string };
+      if (body.votingMode) {
+        votingMode = body.votingMode;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ votingMode }),
+      });
       return;
     }
-    await route.fulfill({
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ schemaVersion: 1, entries: [] }),
-    });
+
+    if (method === 'PATCH' && path.endsWith('/ranking/score-weights')) {
+      const body = route.request().postDataJSON() as {
+        judgeWeightPercent?: number;
+      };
+      if (typeof body.judgeWeightPercent === 'number') {
+        judgeWeightPercent = body.judgeWeightPercent;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          judgeWeightPercent,
+          publicWeightPercent: 100 - judgeWeightPercent,
+        }),
+      });
+      return;
+    }
+
+    if (method === 'PATCH' && path.endsWith('/ranking/publish')) {
+      const body = route.request().postDataJSON() as { published?: boolean };
+      resultsPublished = Boolean(body.published);
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ published: resultsPublished }),
+      });
+      return;
+    }
+
+    if (method === 'GET' && path.endsWith('/ranking')) {
+      await route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schemaVersion: 1,
+          resultsPublished,
+          votingMode,
+          judgeWeightPercent,
+          publicWeightPercent: 100 - judgeWeightPercent,
+          entries: [],
+        }),
+      });
+      return;
+    }
+
+    await route.fallback();
   });
 }
 

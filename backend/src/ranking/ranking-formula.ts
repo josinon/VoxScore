@@ -1,14 +1,30 @@
 import { UserRole } from '../common/user-role.enum';
+import { VotingMode } from '../common/voting-mode.enum';
 import { VOTE_CRITERIA } from '../voting/voting.constants';
 
 /**
- * Ponderação do ranking (README §5 — Megadance 2026; DEVSPEC §4.2 `RankingModule`).
- * Score final com **os dois grupos**: `0.8 * média_jurados + 0.2 * média_público`.
+ * Ponderação padrão do ranking quando o modo é {@link VotingMode.JUDGES_AND_PUBLIC}.
+ * Pode ser sobrescrita por `judgeWeightPercent` em event_settings.
  */
 export const RANKING_JUDGE_WEIGHT = 0.8;
 
 /** Complemento de {@link RANKING_JUDGE_WEIGHT} (jurados + público = 100%). */
 export const RANKING_PUBLIC_WEIGHT = 0.2;
+
+export type RankingWeights = {
+  /** Fração 0–1 (ex.: 0.8 = 80%). */
+  judgeWeight: number;
+  /** Fração 0–1; deve complementar `judgeWeight`. */
+  publicWeight: number;
+};
+
+export function weightsFromPercent(judgeWeightPercent: number): RankingWeights {
+  const clamped = Math.max(0, Math.min(100, judgeWeightPercent));
+  return {
+    judgeWeight: clamped / 100,
+    publicWeight: (100 - clamped) / 100,
+  };
+}
 
 export interface RankingCandidateInput {
   id: string;
@@ -33,10 +49,10 @@ export interface RankingLeaderboardRow {
   /** Idem para 4 critérios do público; `null` se não houver votos públicos. */
   publicCompositeAverage: number | null;
   /**
-   * Com ambos os grupos: `RANKING_JUDGE_WEIGHT * judge + RANKING_PUBLIC_WEIGHT * public`.
-   * Só um grupo: usa **só a média desse grupo** (o outro lado não entra como zero — evita penalizar candidatos sem jurados ou sem público).
-   * Sem votos: **0**.
-   * Antes de aplicar {@link scorePenalty}.
+   * Depende do {@link VotingMode}:
+   * - JUDGES_AND_PUBLIC: pesos configuráveis quando ambos existem; senão a média do grupo presente.
+   * - PUBLIC_ONLY / JUDGES_ONLY: só a média desse grupo.
+   * Sem votos relevantes: **0**. Antes de aplicar {@link scorePenalty}.
    */
   computedScore: number;
   /** Desconto administrativo subtraído de {@link computedScore}. */
@@ -77,12 +93,37 @@ function criterionAverages(
   return out;
 }
 
+function votesForMode(
+  votes: RankingVoteInput[],
+  mode: VotingMode,
+): RankingVoteInput[] {
+  if (mode === VotingMode.PUBLIC_ONLY) {
+    return votes.filter((v) => v.userRole === UserRole.PUBLIC);
+  }
+  if (mode === VotingMode.JUDGES_ONLY) {
+    return votes.filter((v) => v.userRole === UserRole.JUDGE);
+  }
+  return votes.filter(
+    (v) => v.userRole === UserRole.PUBLIC || v.userRole === UserRole.JUDGE,
+  );
+}
+
 function aggregateCandidate(
   candidate: RankingCandidateInput,
   votes: RankingVoteInput[],
+  mode: VotingMode,
+  weights: RankingWeights,
 ): Omit<RankingLeaderboardRow, 'rank'> {
-  const judgeVotes = votes.filter((v) => v.userRole === UserRole.JUDGE);
-  const publicVotes = votes.filter((v) => v.userRole === UserRole.PUBLIC);
+  const relevant = votesForMode(votes, mode);
+  const includeJudges = mode !== VotingMode.PUBLIC_ONLY;
+  const includePublic = mode !== VotingMode.JUDGES_ONLY;
+
+  const judgeVotes = includeJudges
+    ? relevant.filter((v) => v.userRole === UserRole.JUDGE)
+    : [];
+  const publicVotes = includePublic
+    ? relevant.filter((v) => v.userRole === UserRole.PUBLIC)
+    : [];
 
   const judgeComposites = judgeVotes.map((v) =>
     compositeForVote(v.criteriaScores),
@@ -101,10 +142,14 @@ function aggregateCandidate(
       : null;
 
   let finalRaw: number;
-  if (judgeCompositeAverage != null && publicCompositeAverage != null) {
+  if (mode === VotingMode.PUBLIC_ONLY) {
+    finalRaw = publicCompositeAverage ?? 0;
+  } else if (mode === VotingMode.JUDGES_ONLY) {
+    finalRaw = judgeCompositeAverage ?? 0;
+  } else if (judgeCompositeAverage != null && publicCompositeAverage != null) {
     finalRaw =
-      RANKING_JUDGE_WEIGHT * judgeCompositeAverage +
-      RANKING_PUBLIC_WEIGHT * publicCompositeAverage;
+      weights.judgeWeight * judgeCompositeAverage +
+      weights.publicWeight * publicCompositeAverage;
   } else if (judgeCompositeAverage != null) {
     finalRaw = judgeCompositeAverage;
   } else if (publicCompositeAverage != null) {
@@ -143,6 +188,11 @@ function aggregateCandidate(
 export function buildLeaderboard(
   candidates: RankingCandidateInput[],
   votes: RankingVoteInput[],
+  votingMode: VotingMode = VotingMode.JUDGES_AND_PUBLIC,
+  weights: RankingWeights = {
+    judgeWeight: RANKING_JUDGE_WEIGHT,
+    publicWeight: RANKING_PUBLIC_WEIGHT,
+  },
 ): RankingLeaderboardRow[] {
   const byCandidate = new Map<string, RankingVoteInput[]>();
   for (const v of votes) {
@@ -152,7 +202,7 @@ export function buildLeaderboard(
   }
 
   const rows: Omit<RankingLeaderboardRow, 'rank'>[] = candidates.map((c) =>
-    aggregateCandidate(c, byCandidate.get(c.id) ?? []),
+    aggregateCandidate(c, byCandidate.get(c.id) ?? [], votingMode, weights),
   );
 
   const sorted = [...rows].sort((a, b) => {
@@ -168,12 +218,17 @@ export function buildLeaderboard(
 
   let rank = 1;
   return sorted.map((row, i) => {
-    if (
-      i > 0 &&
-      row.finalScore < sorted[i - 1]!.finalScore
-    ) {
+    if (i > 0 && row.finalScore < sorted[i - 1]!.finalScore) {
       rank = i + 1;
     }
     return { ...row, rank };
   });
+}
+
+/** Filtra votos a contar em `voteCount` conforme o modo. */
+export function filterVotesForMode(
+  votes: RankingVoteInput[],
+  mode: VotingMode,
+): RankingVoteInput[] {
+  return votesForMode(votes, mode);
 }

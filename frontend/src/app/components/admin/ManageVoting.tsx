@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Lock, Unlock, CheckCircle, XCircle, Eye, EyeOff } from 'lucide-react';
+import type { VotingMode } from '../../../lib/api';
 import { Artist } from '../../types';
 
 interface ManageVotingProps {
@@ -9,7 +11,38 @@ interface ManageVotingProps {
   resultsPublished: boolean;
   publishLoading?: boolean;
   onSetResultsPublished: (published: boolean) => void | Promise<void>;
+  votingMode: VotingMode;
+  votingModeLoading?: boolean;
+  onSetVotingMode: (mode: VotingMode) => void | Promise<void>;
+  judgeWeightPercent: number;
+  scoreWeightsLoading?: boolean;
+  onSetScoreWeights: (judgeWeightPercent: number) => void | Promise<void>;
 }
+
+const MODE_OPTIONS: {
+  value: VotingMode;
+  title: string;
+  description: string;
+}[] = [
+  {
+    value: 'JUDGES_AND_PUBLIC',
+    title: 'Jurados + público',
+    description:
+      'Ambos votam. A nota final usa os percentuais que definir abaixo.',
+  },
+  {
+    value: 'PUBLIC_ONLY',
+    title: 'Apenas público',
+    description:
+      'Só o público vota. A nota final é a média do público (100%).',
+  },
+  {
+    value: 'JUDGES_ONLY',
+    title: 'Apenas jurados',
+    description:
+      'Só os jurados votam. A nota final é a média dos jurados (100%).',
+  },
+];
 
 export function ManageVoting({
   artists,
@@ -19,7 +52,22 @@ export function ManageVoting({
   resultsPublished,
   publishLoading = false,
   onSetResultsPublished,
+  votingMode,
+  votingModeLoading = false,
+  onSetVotingMode,
+  judgeWeightPercent,
+  scoreWeightsLoading = false,
+  onSetScoreWeights,
 }: ManageVotingProps) {
+  const [draftJudgePercent, setDraftJudgePercent] = useState(judgeWeightPercent);
+
+  useEffect(() => {
+    setDraftJudgePercent(judgeWeightPercent);
+  }, [judgeWeightPercent]);
+
+  const publicPercent = 100 - draftJudgePercent;
+  const weightsDirty = draftJudgePercent !== judgeWeightPercent;
+
   return (
     <div className="space-y-6">
       <div>
@@ -35,6 +83,114 @@ export function ManageVoting({
           Carregando candidatos…
         </div>
       ) : null}
+
+      <div
+        className="rounded-xl border-2 border-purple-200 bg-white p-6"
+        data-testid="voting-mode-panel"
+      >
+        <h3 className="text-lg font-bold text-gray-900 mb-1">Modo de votação</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Define quem pode votar neste evento e como a nota final é calculada no
+          ranking. Votos do grupo excluído deixam de contar (não são apagados).
+        </p>
+        <div className="grid gap-3">
+          {MODE_OPTIONS.map((opt) => {
+            const selected = votingMode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                data-testid={`voting-mode-${opt.value}`}
+                disabled={votingModeLoading}
+                onClick={() => void onSetVotingMode(opt.value)}
+                className={`text-left rounded-xl border-2 p-4 transition-all disabled:opacity-60 ${
+                  selected
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 hover:border-purple-300 bg-white'
+                }`}
+              >
+                <p className="font-semibold text-gray-900">{opt.title}</p>
+                <p className="text-sm text-gray-600 mt-1">{opt.description}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        {votingMode === 'JUDGES_AND_PUBLIC' ? (
+          <div
+            className="mt-5 rounded-xl border border-purple-100 bg-purple-50/60 p-4"
+            data-testid="score-weights-panel"
+          >
+            <h4 className="font-semibold text-gray-900 mb-1">
+              Pesos da nota final
+            </h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Defina o percentual dos jurados; o público recebe o restante
+              (soma sempre 100%).
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4 mb-4">
+              <label className="block">
+                <span className="text-sm font-medium text-gray-700">
+                  Jurados (%)
+                </span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  data-testid="judge-weight-input"
+                  value={draftJudgePercent}
+                  disabled={scoreWeightsLoading}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    if (!Number.isFinite(n)) {
+                      return;
+                    }
+                    setDraftJudgePercent(Math.max(0, Math.min(100, Math.round(n))));
+                  }}
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+              </label>
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Público (%)
+                </span>
+                <div
+                  className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900"
+                  data-testid="public-weight-display"
+                >
+                  {publicPercent}
+                </div>
+              </div>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={1}
+              value={draftJudgePercent}
+              disabled={scoreWeightsLoading}
+              onChange={(e) => setDraftJudgePercent(Number(e.target.value))}
+              className="w-full accent-purple-600"
+              aria-label="Percentual dos jurados"
+            />
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                data-testid="score-weights-save"
+                disabled={scoreWeightsLoading || !weightsDirty}
+                onClick={() => void onSetScoreWeights(draftJudgePercent)}
+                className="rounded-lg bg-purple-700 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 disabled:opacity-50"
+              >
+                {scoreWeightsLoading ? 'A guardar…' : 'Guardar pesos'}
+              </button>
+              <p className="text-sm text-gray-600">
+                Nota = {draftJudgePercent}% jurados + {publicPercent}% público
+              </p>
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       <div
         className={`rounded-xl border-2 p-6 mb-6 ${
@@ -178,19 +334,21 @@ export function ManageVoting({
         <ul className="space-y-2 text-sm">
           <li className="flex items-start gap-2">
             <span className="font-bold">1.</span>
-            <span>Aguarde a conclusão de cada apresentação musical</span>
+            <span>Escolha o modo de votação do evento (jurados, público ou ambos)</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-bold">2.</span>
-            <span>Clique em "Abrir Votação" para liberar a avaliação</span>
+            <span>
+              No modo combinado, ajuste os percentuais jurados/público e guarde
+            </span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-bold">3.</span>
-            <span>Jurados e público só podem votar em apresentações abertas</span>
+            <span>Aguarde a conclusão de cada apresentação musical</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-bold">4.</span>
-            <span>Você pode fechar a votação a qualquer momento</span>
+            <span>Clique em &quot;Abrir Votação&quot; para liberar a avaliação</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="font-bold">5.</span>

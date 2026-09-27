@@ -230,6 +230,9 @@ test.describe('Jornada do eleitor (API mock)', () => {
         body: JSON.stringify({
           schemaVersion: 1,
           resultsPublished: false,
+          votingMode: 'JUDGES_AND_PUBLIC',
+          judgeWeightPercent: 80,
+          publicWeightPercent: 20,
           entries: [
             {
               rank: 0,
@@ -267,6 +270,9 @@ test.describe('Jornada do eleitor (API mock)', () => {
     const rankingFirst = {
       schemaVersion: 1 as const,
       resultsPublished: true,
+      votingMode: 'JUDGES_AND_PUBLIC' as const,
+      judgeWeightPercent: 80,
+      publicWeightPercent: 20,
       entries: [
         {
           rank: 1,
@@ -306,6 +312,9 @@ test.describe('Jornada do eleitor (API mock)', () => {
     const rankingSecond = {
       schemaVersion: 1 as const,
       resultsPublished: true,
+      votingMode: 'JUDGES_AND_PUBLIC' as const,
+      judgeWeightPercent: 80,
+      publicWeightPercent: 20,
       entries: [
         {
           rank: 1,

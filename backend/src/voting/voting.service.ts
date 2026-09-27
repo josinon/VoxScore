@@ -8,9 +8,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { UserRole } from '../common/user-role.enum';
+import { roleCanVoteInMode } from '../common/voting-mode.enum';
 import { Candidate } from '../entities/candidate.entity';
 import { User } from '../entities/user.entity';
 import { Vote } from '../entities/vote.entity';
+import { EventSettingsService } from '../ranking/event-settings.service';
 import { RankingService } from '../ranking/ranking.service';
 import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import {
@@ -40,6 +42,7 @@ export class VotingService {
     private readonly candidateCache: VoteCandidateCacheService,
     private readonly realtime: RealtimeHubService,
     private readonly ranking: RankingService,
+    private readonly eventSettings: EventSettingsService,
   ) {}
 
   private allowedCriteriaForRole(role: string): readonly string[] {
@@ -88,6 +91,21 @@ export class VotingService {
   ): Promise<Vote> {
     if (role === UserRole.ADMIN) {
       throw new ForbiddenException('Administrators cannot vote');
+    }
+
+    const votingMode = await this.eventSettings.getVotingMode();
+    if (!roleCanVoteInMode(role, votingMode)) {
+      if (votingMode === 'PUBLIC_ONLY') {
+        throw new ForbiddenException(
+          'Neste evento só o público pode votar',
+        );
+      }
+      if (votingMode === 'JUDGES_ONLY') {
+        throw new ForbiddenException(
+          'Neste evento só os jurados podem votar',
+        );
+      }
+      throw new ForbiddenException('This role cannot submit votes');
     }
 
     this.validateCriteriaScores(role, criteriaScores);

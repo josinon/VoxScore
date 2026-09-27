@@ -195,6 +195,9 @@ async function installSmokeApiMocks(page: Page, state: SmokeState) {
       body: JSON.stringify({
         schemaVersion: 1,
         resultsPublished: true,
+        votingMode: 'JUDGES_AND_PUBLIC',
+        judgeWeightPercent: 80,
+        publicWeightPercent: 20,
         entries: [
           {
             candidateId: CANDIDATE_ID,

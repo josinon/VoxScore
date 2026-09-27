@@ -6,6 +6,11 @@ function sampleDto(overrides: Partial<RankingResponseDto> = {}): RankingResponse
   return {
     schemaVersion: 1,
     resultsPublished: false,
+    votingMode: 'JUDGES_AND_PUBLIC',
+        judgeWeightPercent: 80,
+        publicWeightPercent: 20 as RankingResponseDto['votingMode'],
+    judgeWeightPercent: 80,
+    publicWeightPercent: 20,
     entries: [],
     ...overrides,
   };

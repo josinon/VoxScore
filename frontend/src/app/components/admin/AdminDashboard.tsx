@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { Music, Users, Settings, TrendingUp, LayoutDashboard } from 'lucide-react';
-import type { MeResponse, UserRole, UsersListQuery } from '../../../lib/api';
+import type {
+  MeResponse,
+  UserRole,
+  UsersListQuery,
+  VotingMode,
+} from '../../../lib/api';
 import { UserMenu } from '../UserMenu';
 import { ManageCandidates } from './ManageCandidates';
 import { ManageUsers } from './ManageUsers';
@@ -38,6 +43,12 @@ interface AdminDashboardProps {
   resultsPublished: boolean;
   publishLoading: boolean;
   onSetResultsPublished: (published: boolean) => void | Promise<void>;
+  votingMode: VotingMode;
+  votingModeLoading: boolean;
+  onSetVotingMode: (mode: VotingMode) => void | Promise<void>;
+  judgeWeightPercent: number;
+  scoreWeightsLoading: boolean;
+  onSetScoreWeights: (judgeWeightPercent: number) => void | Promise<void>;
 }
 
 type TabType = 'overview' | 'candidates' | 'users' | 'voting';
@@ -66,6 +77,12 @@ export function AdminDashboard({
   resultsPublished,
   publishLoading,
   onSetResultsPublished,
+  votingMode,
+  votingModeLoading,
+  onSetVotingMode,
+  judgeWeightPercent,
+  scoreWeightsLoading,
+  onSetScoreWeights,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
@@ -270,6 +287,12 @@ export function AdminDashboard({
             resultsPublished={resultsPublished}
             publishLoading={publishLoading}
             onSetResultsPublished={onSetResultsPublished}
+            votingMode={votingMode}
+            votingModeLoading={votingModeLoading}
+            onSetVotingMode={onSetVotingMode}
+            judgeWeightPercent={judgeWeightPercent}
+            scoreWeightsLoading={scoreWeightsLoading}
+            onSetScoreWeights={onSetScoreWeights}
           />
         )}
       </main>

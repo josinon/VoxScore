@@ -22,6 +22,8 @@ import { UserRole } from '../common/user-role.enum';
 import { RealtimeHubService } from '../realtime/realtime-hub.service';
 import { RankingResponseDto } from './dto/ranking-response.dto';
 import { SetRankingPublishedDto } from './dto/set-ranking-published.dto';
+import { SetScoreWeightsDto } from './dto/set-score-weights.dto';
+import { SetVotingModeDto } from './dto/set-voting-mode.dto';
 import { RankingService } from './ranking.service';
 
 type JwtUser = { userId: string; role: string };
@@ -41,7 +43,7 @@ export class RankingController {
   @ApiOperation({
     summary: 'Leaderboard ou contagens de avaliações',
     description:
-      'Com `resultsPublished=false`, público e jurados veem apenas `voteCount` por candidato (sem notas). ADMIN vê sempre as notas. Após publicar, inclui ranking completo e vencedores.',
+      'Com `resultsPublished=false`, público e jurados veem apenas `voteCount` por candidato (sem notas). ADMIN vê sempre as notas. Após publicar, inclui ranking completo e vencedores. Inclui `votingMode` do evento.',
   })
   @ApiOkResponse({ type: RankingResponseDto })
   async getRanking(
@@ -69,5 +71,56 @@ export class RankingController {
     );
     this.realtime.broadcastRankingChanged();
     return { published };
+  }
+
+  @Patch('voting-mode')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Definir modo de votação do evento (ADMIN)',
+    description:
+      'JUDGES_AND_PUBLIC, PUBLIC_ONLY ou JUDGES_ONLY. Afeta quem pode votar e o cálculo do ranking.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: { votingMode: { type: 'string' } },
+    },
+  })
+  @ApiForbiddenResponse()
+  async setVotingMode(
+    @Body() body: SetVotingModeDto,
+  ): Promise<{ votingMode: string }> {
+    const votingMode = await this.rankingService.setVotingMode(body.votingMode);
+    this.realtime.broadcastRankingChanged();
+    return { votingMode };
+  }
+
+  @Patch('score-weights')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({
+    summary: 'Definir pesos do ranking jurados+público (ADMIN)',
+    description:
+      'judgeWeightPercent 0–100; o público fica com 100 − este valor. Só afeta o modo JUDGES_AND_PUBLIC.',
+  })
+  @ApiOkResponse({
+    schema: {
+      type: 'object',
+      properties: {
+        judgeWeightPercent: { type: 'number' },
+        publicWeightPercent: { type: 'number' },
+      },
+    },
+  })
+  @ApiForbiddenResponse()
+  async setScoreWeights(
+    @Body() body: SetScoreWeightsDto,
+  ): Promise<{ judgeWeightPercent: number; publicWeightPercent: number }> {
+    const weights = await this.rankingService.setScoreWeights(
+      body.judgeWeightPercent,
+    );
+    this.realtime.broadcastRankingChanged();
+    return weights;
   }
 }

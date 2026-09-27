@@ -11,11 +11,14 @@ import {
   patchUser,
   setCandidateVotingOpen,
   setRankingPublished,
+  setScoreWeights,
+  setVotingMode,
   updateCandidate,
   type CreateCandidateBody,
   type MeResponse,
   type UserRole,
   type UsersListQuery,
+  type VotingMode,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
 import { isAdminRealtimeEnabled } from '../lib/env';
@@ -87,6 +90,12 @@ export function AdminAppShell() {
   const [rankingError, setRankingError] = useState<string | null>(null);
   const [resultsPublished, setResultsPublished] = useState(false);
   const [publishLoading, setPublishLoading] = useState(false);
+  const [votingMode, setVotingModeState] =
+    useState<VotingMode>('JUDGES_AND_PUBLIC');
+  const [votingModeLoading, setVotingModeLoading] = useState(false);
+  const [judgeWeightPercent, setJudgeWeightPercent] = useState(80);
+  const [publicWeightPercent, setPublicWeightPercent] = useState(20);
+  const [scoreWeightsLoading, setScoreWeightsLoading] = useState(false);
 
   const menuUser = {
     name: user?.displayName ?? 'Admin',
@@ -144,7 +153,12 @@ export function AdminAppShell() {
 
   useEffect(() => {
     void fetchRanking()
-      .then((res) => setResultsPublished(res.resultsPublished))
+      .then((res) => {
+        setResultsPublished(res.resultsPublished);
+        setVotingModeState(res.votingMode ?? 'JUDGES_AND_PUBLIC');
+        setJudgeWeightPercent(res.judgeWeightPercent ?? 80);
+        setPublicWeightPercent(res.publicWeightPercent ?? 20);
+      })
       .catch(() => {});
   }, []);
 
@@ -153,6 +167,9 @@ export function AdminAppShell() {
     try {
       const res = await fetchRanking();
       setResultsPublished(res.resultsPublished);
+      setVotingModeState(res.votingMode ?? 'JUDGES_AND_PUBLIC');
+      setJudgeWeightPercent(res.judgeWeightPercent ?? 80);
+      setPublicWeightPercent(res.publicWeightPercent ?? 20);
       setRankingRows(
         mapRankingEntriesToRows(
           res.entries,
@@ -216,6 +233,41 @@ export function AdminAppShell() {
       );
     } finally {
       setPublishLoading(false);
+    }
+  };
+
+  const handleSetVotingMode = async (mode: VotingMode) => {
+    setVotingModeLoading(true);
+    try {
+      const res = await setVotingMode(mode);
+      setVotingModeState(res.votingMode);
+      toast.success('Modo de votação atualizado.');
+      await loadRanking();
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError ? e.message : 'Erro ao atualizar o modo de votação.',
+      );
+    } finally {
+      setVotingModeLoading(false);
+    }
+  };
+
+  const handleSetScoreWeights = async (judgePercent: number) => {
+    setScoreWeightsLoading(true);
+    try {
+      const res = await setScoreWeights(judgePercent);
+      setJudgeWeightPercent(res.judgeWeightPercent);
+      setPublicWeightPercent(res.publicWeightPercent);
+      toast.success(
+        `Pesos guardados: ${res.judgeWeightPercent}% jurados / ${res.publicWeightPercent}% público.`,
+      );
+      await loadRanking();
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError ? e.message : 'Erro ao atualizar os pesos.',
+      );
+    } finally {
+      setScoreWeightsLoading(false);
     }
   };
 
@@ -302,6 +354,9 @@ export function AdminAppShell() {
       <Ranking
         rankings={rankingRows}
         resultsPublished={resultsPublished}
+        votingMode={votingMode}
+        judgeWeightPercent={judgeWeightPercent}
+        publicWeightPercent={publicWeightPercent}
         adminPreview
         onClose={() => setShowRanking(false)}
         loading={rankingLoading}
@@ -327,6 +382,12 @@ export function AdminAppShell() {
       onSetResultsPublished={(published) =>
         void handleSetResultsPublished(published)
       }
+      votingMode={votingMode}
+      votingModeLoading={votingModeLoading}
+      onSetVotingMode={(mode) => void handleSetVotingMode(mode)}
+      judgeWeightPercent={judgeWeightPercent}
+      scoreWeightsLoading={scoreWeightsLoading}
+      onSetScoreWeights={(percent) => void handleSetScoreWeights(percent)}
       onAddArtist={handleAddArtist}
       onUpdateArtist={handleUpdateArtist}
       onDeleteArtist={handleDeleteArtist}

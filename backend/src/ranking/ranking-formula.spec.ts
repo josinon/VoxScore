@@ -1,4 +1,5 @@
 import { UserRole } from '../common/user-role.enum';
+import { VotingMode } from '../common/voting-mode.enum';
 import {
   buildLeaderboard,
   RANKING_JUDGE_WEIGHT,
@@ -102,6 +103,67 @@ describe('ranking-formula (Fase 6)', () => {
       expect(row.finalScore).toBe(0);
       expect(row.judgeCompositeAverage).toBeNull();
       expect(row.publicCompositeAverage).toBeNull();
+    });
+  });
+
+  describe('votingMode', () => {
+    const candidate = { id: 'c-mode', name: 'Mode' };
+    const mixedVotes = [
+      {
+        candidateId: candidate.id,
+        userRole: UserRole.JUDGE,
+        criteriaScores: allCriteria(10),
+      },
+      {
+        candidateId: candidate.id,
+        userRole: UserRole.PUBLIC,
+        criteriaScores: allCriteria(4),
+      },
+    ];
+
+    it('PUBLIC_ONLY: ignora votos de jurados', () => {
+      const [row] = buildLeaderboard(
+        [candidate],
+        mixedVotes,
+        VotingMode.PUBLIC_ONLY,
+      );
+      expect(row.judgeCompositeAverage).toBeNull();
+      expect(row.publicCompositeAverage).toBe(4);
+      expect(row.finalScore).toBe(4);
+    });
+
+    it('JUDGES_ONLY: ignora votos do público', () => {
+      const [row] = buildLeaderboard(
+        [candidate],
+        mixedVotes,
+        VotingMode.JUDGES_ONLY,
+      );
+      expect(row.publicCompositeAverage).toBeNull();
+      expect(row.judgeCompositeAverage).toBe(10);
+      expect(row.finalScore).toBe(10);
+    });
+
+    it('JUDGES_AND_PUBLIC: mantém 80/20', () => {
+      const [row] = buildLeaderboard(
+        [candidate],
+        mixedVotes,
+        VotingMode.JUDGES_AND_PUBLIC,
+      );
+      expect(row.judgeCompositeAverage).toBe(10);
+      expect(row.publicCompositeAverage).toBe(4);
+      expect(row.finalScore).toBe(
+        roundScore4(RANKING_JUDGE_WEIGHT * 10 + RANKING_PUBLIC_WEIGHT * 4),
+      );
+    });
+
+    it('JUDGES_AND_PUBLIC: respeita pesos customizados (70/30)', () => {
+      const [row] = buildLeaderboard(
+        [candidate],
+        mixedVotes,
+        VotingMode.JUDGES_AND_PUBLIC,
+        { judgeWeight: 0.7, publicWeight: 0.3 },
+      );
+      expect(row.finalScore).toBe(roundScore4(0.7 * 10 + 0.3 * 4));
     });
   });
 

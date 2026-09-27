@@ -33,7 +33,14 @@ export async function installMinimalVoterApiStubs(page: Page): Promise<void> {
     await route.fulfill({
       status: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ schemaVersion: 1, entries: [] }),
+      body: JSON.stringify({
+        schemaVersion: 1,
+        resultsPublished: false,
+        votingMode: 'JUDGES_AND_PUBLIC',
+        judgeWeightPercent: 80,
+        publicWeightPercent: 20,
+        entries: [],
+      }),
     });
   });
 }

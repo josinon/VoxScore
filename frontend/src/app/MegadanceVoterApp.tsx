@@ -7,6 +7,7 @@ import {
   fetchCandidates,
   fetchRanking,
   submitVote,
+  type VotingMode,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
 import { mapRankingEntriesToRows } from '../lib/ranking-map';
@@ -68,6 +69,29 @@ function roleLabel(role: string): string {
   }
 }
 
+function roleCanVoteInMode(
+  role: 'PUBLIC' | 'JUDGE',
+  mode: VotingMode,
+): boolean {
+  if (mode === 'PUBLIC_ONLY') {
+    return role === 'PUBLIC';
+  }
+  if (mode === 'JUDGES_ONLY') {
+    return role === 'JUDGE';
+  }
+  return true;
+}
+
+function modeBlockMessage(mode: VotingMode, role: 'PUBLIC' | 'JUDGE'): string {
+  if (mode === 'PUBLIC_ONLY' && role === 'JUDGE') {
+    return 'Neste evento só o público pode votar.';
+  }
+  if (mode === 'JUDGES_ONLY' && role === 'PUBLIC') {
+    return 'Neste evento só os jurados podem votar.';
+  }
+  return 'Você não tem permissão para votar neste evento.';
+}
+
 export function MegadanceVoterApp() {
   const { user, logout } = useAuth();
 
@@ -87,6 +111,9 @@ export function MegadanceVoterApp() {
   const [rankingLoading, setRankingLoading] = useState(false);
   const [rankingError, setRankingError] = useState<string | null>(null);
   const [resultsPublished, setResultsPublished] = useState(false);
+  const [votingMode, setVotingMode] = useState<VotingMode>('JUDGES_AND_PUBLIC');
+  const [judgeWeightPercent, setJudgeWeightPercent] = useState(80);
+  const [publicWeightPercent, setPublicWeightPercent] = useState(20);
 
   useEffect(() => {
     if (!user?.id) {
@@ -94,6 +121,17 @@ export function MegadanceVoterApp() {
     }
     setVotedIds(readVotedCandidateIds(user.id));
   }, [user?.id]);
+
+  useEffect(() => {
+    void fetchRanking()
+      .then((res) => {
+        setResultsPublished(res.resultsPublished);
+        setVotingMode(res.votingMode ?? 'JUDGES_AND_PUBLIC');
+        setJudgeWeightPercent(res.judgeWeightPercent ?? 80);
+        setPublicWeightPercent(res.publicWeightPercent ?? 20);
+      })
+      .catch(() => {});
+  }, []);
 
   const loadCandidates = useCallback(async (options?: { silent?: boolean }) => {
     if (!options?.silent) {
@@ -141,6 +179,9 @@ export function MegadanceVoterApp() {
     try {
       const res = await fetchRanking();
       setResultsPublished(res.resultsPublished);
+      setVotingMode(res.votingMode ?? 'JUDGES_AND_PUBLIC');
+      setJudgeWeightPercent(res.judgeWeightPercent ?? 80);
+      setPublicWeightPercent(res.publicWeightPercent ?? 20);
       setRankingRows(
         mapRankingEntriesToRows(res.entries, candidates, res.resultsPublished),
       );
@@ -184,6 +225,7 @@ export function MegadanceVoterApp() {
   }
 
   const voterRole = user.role;
+  const canVoteInMode = roleCanVoteInMode(voterRole, votingMode);
   const criteria = VOTING_CRITERIA;
 
   const menuUser = {
@@ -201,6 +243,10 @@ export function MegadanceVoterApp() {
   };
 
   const handleVote = (artistId: string) => {
+    if (!canVoteInMode) {
+      toast.error(modeBlockMessage(votingMode, voterRole));
+      return;
+    }
     if (votedIds.has(artistId)) {
       return;
     }
@@ -227,7 +273,8 @@ export function MegadanceVoterApp() {
       }
       if (e instanceof ApiError && e.status === 403) {
         throw new Error(
-          'Votação fechada para este candidato ou você não tem permissão para votar.',
+          e.message ||
+            'Votação fechada para este candidato ou você não tem permissão para votar.',
         );
       }
       if (e instanceof ApiError) {
@@ -280,6 +327,9 @@ export function MegadanceVoterApp() {
       <Ranking
         rankings={rankingRows}
         resultsPublished={resultsPublished}
+        votingMode={votingMode}
+        judgeWeightPercent={judgeWeightPercent}
+        publicWeightPercent={publicWeightPercent}
         onClose={() => setShowRanking(false)}
         loading={rankingLoading}
         error={rankingError}
@@ -312,6 +362,16 @@ export function MegadanceVoterApp() {
               : 'Recarregue a página para ver alterações na lista.'}
           </p>
         </div>
+
+        {!canVoteInMode ? (
+          <div
+            className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+            data-testid="voting-mode-blocked"
+            role="status"
+          >
+            {modeBlockMessage(votingMode, voterRole)}
+          </div>
+        ) : null}
 
         {listLoading ? (
           <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
