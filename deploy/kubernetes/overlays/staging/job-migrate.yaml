@@ -1,0 +1,39 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voxscore-migrate
+  namespace: voxscore-staging
+  labels:
+    app.kubernetes.io/name: voxscore-migrate
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: voxscore-migrate
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+        - name: migrate
+          image: josinon/voxscore-api:0.0.21
+          imagePullPolicy: IfNotPresent
+          workingDir: /app
+          command: ['npm', 'run', 'migration:run:prod']
+          envFrom:
+            - secretRef:
+                name: voxscore-api
+          env:
+            - name: NODE_ENV
+              value: production
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

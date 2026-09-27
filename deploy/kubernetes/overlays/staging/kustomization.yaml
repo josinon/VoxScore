@@ -1,0 +1,67 @@
+# Staging / homologação — stack reduzida, namespace isolado, dados demo.
+#
+# Host: staging-megavoz.lab6.cloud
+# Namespace: voxscore-staging
+#
+# Não use `kubectl apply -k` deste overlay sobre produção (`voxscore`).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: voxscore-staging
+
+resources:
+  - ../../base
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - redis-deployment.yaml
+  - redis-service.yaml
+
+secretGenerator:
+  - name: postgres-credentials
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - POSTGRES_USER=voxscore
+      - POSTGRES_PASSWORD=staging-voxscore
+      - POSTGRES_DB=voxscore
+  - name: voxscore-api
+    options:
+      disableNameSuffixHash: true
+    literals:
+      - DATABASE_URL=postgresql://voxscore:staging-voxscore@postgres:5432/voxscore
+      - JWT_SECRET=staging-jwt-change-me-use-at-least-32-chars
+      - GOOGLE_CLIENT_ID=unused-with-mock
+      - GOOGLE_CLIENT_SECRET=unused-with-mock
+      - GOOGLE_CALLBACK_URL=https://staging-megavoz.lab6.cloud/api/v1/auth/google/callback
+      - OAUTH_FRONTEND_REDIRECT_URL=https://staging-megavoz.lab6.cloud/oauth/callback
+
+patches:
+  - target:
+      kind: Namespace
+      name: voxscore
+    patch: |-
+      - op: replace
+        path: /metadata/name
+        value: voxscore-staging
+      - op: add
+        path: /metadata/labels/app.kubernetes.io~1environment
+        value: staging
+  - path: patch-configmap-api.yaml
+  - path: patch-deployment-api.yaml
+  - path: patch-deployment-frontend.yaml
+  - path: patch-ingress.yaml
+
+images:
+  - name: josinon/voxscore-api
+    newName: josinon/voxscore-api
+    newTag: "0.0.21"
+  - name: josinon/voxscore-frontend
+    newName: josinon/voxscore-frontend
+    newTag: "0.0.21-staging"
+
+configMapGenerator:
+  - name: voxscore-seed-script
+    options:
+      disableNameSuffixHash: true
+    files:
+      - seed-demo-ranking.sh

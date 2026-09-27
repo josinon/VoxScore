@@ -1,0 +1,86 @@
+# Job one-shot: limpa candidatos/votos e semeia 6 candidatos demo + votos.
+# Aplicar manualmente após migrate (não entra no kustomization).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: voxscore-seed-demo
+  namespace: voxscore-staging
+  labels:
+    app.kubernetes.io/name: voxscore-seed-demo
+spec:
+  ttlSecondsAfterFinished: 86400
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: voxscore-seed-demo
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-api
+          image: curlimages/curl:8.12.1
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf http://voxscore-api:3000/api/v1/health >/dev/null; do
+                echo waiting for api...
+                sleep 3
+              done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+        - name: reset-db
+          image: postgres:16-alpine
+          envFrom:
+            - secretRef:
+                name: voxscore-api
+          command:
+            - sh
+            - -c
+            - |
+              psql "$DATABASE_URL" -v ON_ERROR_STOP=1 <<'SQL'
+              TRUNCATE TABLE votes RESTART IDENTITY CASCADE;
+              TRUNCATE TABLE candidate_penalties RESTART IDENTITY CASCADE;
+              TRUNCATE TABLE candidates RESTART IDENTITY CASCADE;
+              UPDATE event_settings
+                SET "rankingPublished" = false,
+                    "votingMode" = 'JUDGES_AND_PUBLIC',
+                    "judgeWeightPercent" = 80
+                WHERE id = 'default';
+              DELETE FROM users WHERE email = 'admin@voxscore.test' AND role <> 'ADMIN';
+              UPDATE users
+                SET email = 'admin@voxscore.test', "displayName" = 'Administrator'
+                WHERE role = 'ADMIN';
+              SQL
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+      containers:
+        - name: seed
+          image: python:3.12-alpine
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache curl bash >/dev/null
+              SKIP_DB_RESET=1 API=http://voxscore-api:3000/api/v1 \
+                bash /scripts/seed-demo-ranking.sh
+          volumeMounts:
+            - name: seed-script
+              mountPath: /scripts
+              readOnly: true
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: seed-script
+          configMap:
+            name: voxscore-seed-script
+            defaultMode: 0755

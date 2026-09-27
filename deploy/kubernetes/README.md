@@ -75,6 +75,7 @@ flowchart TB
 | [`base/`](./base/) | Namespace `voxscore`, ConfigMap da API, Deployments, Services, Ingress (host de exemplo). |
 | [`base/job-migrate.yaml`](./base/job-migrate.yaml) | **Job** de migrações TypeORM — aplicar manualmente (não está no `kustomization` por defeito, para evitar conflitos em `kubectl apply` repetidos). |
 | [`overlays/with-postgres/`](./overlays/with-postgres/) | Postgres + **Redis** in-cluster, Secrets (`postgres-credentials` + `voxscore-api`), PVC 10 Gi, initContainers na API (Postgres + Redis); alinhado ao `base` (várias réplicas API, migrações via Job). `REDIS_URL=redis://redis:6379` no ConfigMap. TLS: patch Ingress + [`clusterissuer-letsencrypt-prod.yaml`](./overlays/with-postgres/clusterissuer-letsencrypt-prod.yaml) (apply manual). |
+| [`overlays/staging/`](./overlays/staging/) | Homologação isolada (`voxscore-staging`), 1 réplica, Postgres/Redis pequenos, mock OAuth, host `staging-megavoz.lab6.cloud`, Job de seed com 6 candidatos. Ver [README do staging](./overlays/staging/README.md) (DNS + deploy). |
 | [`overlays/local/`](./overlays/local/) | Postgres in-cluster para demo, secret de demonstração, `AUTH_GOOGLE_MOCK_ENABLED=true`, Ingress em `voxscore.local`. |
 
 ### Overlay `with-postgres` — PostgreSQL dentro do Kubernetes
