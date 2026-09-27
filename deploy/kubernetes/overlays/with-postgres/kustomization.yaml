@@ -3,9 +3,9 @@
 # TLS: o overlay aplica patch no Ingress para cert-manager. O ClusterIssuer é cluster-scoped;
 # aplique-o à parte (não entra no kustomize) para evitar namespace inválido no recurso.
 #
-# Antes de produção: altere as passwords no secretGenerator abaixo e mantenha o mesmo
-# valor em POSTGRES_PASSWORD e na password embutida em DATABASE_URL (URL-encoded se
-# tiver caracteres especiais). Prefira depois migrar para Sealed Secrets / External Secrets.
+# Segredos: copie secrets.env.example → secrets.env e preencha valores reais.
+# secrets.env está no .gitignore. Ambos os Secrets leem esse ficheiro (chaves
+# não usadas por um Secret são ignoradas pelos pods).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
@@ -22,20 +22,13 @@ secretGenerator:
   - name: postgres-credentials
     options:
       disableNameSuffixHash: true
-    literals:
-      - POSTGRES_USER=voxscore
-      - POSTGRES_PASSWORD=voxscore-in-k8s-change-me
-      - POSTGRES_DB=voxscore
+    envs:
+      - secrets.env
   - name: voxscore-api
     options:
       disableNameSuffixHash: true
-    literals:
-      - DATABASE_URL=postgresql://voxscore:voxscore-in-k8s-change-me@postgres:5432/voxscore
-      - JWT_SECRET=k8s-with-postgres-change-me-use-at-least-32-chars
-      - GOOGLE_CLIENT_ID=configure-or-use-mock-in-configmap
-      - GOOGLE_CLIENT_SECRET=configure-or-use-mock-in-configmap
-      - GOOGLE_CALLBACK_URL=https://megavoz.lab6.cloud/api/v1/auth/google/callback
-      - OAUTH_FRONTEND_REDIRECT_URL=https://megavoz.lab6.cloud/oauth/callback
+    envs:
+      - secrets.env
 
 patches:
   - path: patch-deployment-api.yaml

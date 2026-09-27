@@ -4,3 +4,8 @@ backend/.env
 frontend/.env
 frontend/node_modules
 .env
+
+# Kubernetes secrets (valores reais — nunca versionar)
+deploy/kubernetes/**/secrets.env
+**/secrets.env
+!**/secrets.env.example

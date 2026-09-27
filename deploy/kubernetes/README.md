@@ -92,9 +92,9 @@ kubectl -n voxscore rollout restart deployment/voxscore-api
 
 Requisitos: **StorageClass** por defeito para o PVC do Postgres; imagens `voxscore/api` e `voxscore/frontend` acessíveis pelo cluster.
 
-**Credenciais:** em [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml), o valor de `POSTGRES_PASSWORD` no Secret `postgres-credentials` tem de coincidir com a password na URL `DATABASE_URL` do Secret `voxscore-api`. Se a password tiver caracteres reservados na URL, use [encoding na connection string](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING).
+**Credenciais:** copie [`overlays/with-postgres/secrets.env.example`](./overlays/with-postgres/secrets.env.example) para `secrets.env` (gitignored) e preencha. O `secretGenerator` do overlay lê esse ficheiro para os Secrets `postgres-credentials` e `voxscore-api`. `POSTGRES_PASSWORD` tem de coincidir com a password em `DATABASE_URL` ([URL-encoding](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING) se necessário). Sem `secrets.env`, `kubectl apply -k` / `kustomize build` falha.
 
-Ajuste **ConfigMap** `voxscore-api-config` (`CORS_ORIGINS`), **Ingress** (host, TLS) e literais OAuth/Google no `secretGenerator` (ou migre para Sealed Secrets / External Secrets).
+Ajuste **ConfigMap** `voxscore-api-config` (`CORS_ORIGINS`) e **Ingress** (host, TLS). Para produção a longo prazo, prefira Sealed Secrets / External Secrets.
 
 ### TLS com cert-manager + Let’s Encrypt (k3s / Traefik)
 
@@ -181,7 +181,16 @@ docker push SEU_REGISTRY/voxscore-api:TAG
 docker push SEU_REGISTRY/voxscore-frontend:TAG
 ```
 
-Edite [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml): bloco `images:` (`newName` / `newTag`) e, no `secretGenerator`, **alinhe** `POSTGRES_PASSWORD` com a password dentro de `DATABASE_URL`; defina `JWT_SECRET` forte e URLs reais em `GOOGLE_CALLBACK_URL` e `OAUTH_FRONTEND_REDIRECT_URL` se usar OAuth Google.
+Edite [`overlays/with-postgres/kustomization.yaml`](./overlays/with-postgres/kustomization.yaml): bloco `images:` (`newName` / `newTag`).
+
+**Segredos (obrigatório):** valores reais ficam em `secrets.env` (gitignored), não no YAML.
+
+```bash
+cp ./overlays/with-postgres/secrets.env.example ./overlays/with-postgres/secrets.env
+# Edite secrets.env: POSTGRES_PASSWORD alinhado com DATABASE_URL, JWT_SECRET forte,
+# GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET e URLs de callback se usar OAuth Google.
+```
+
 
 Depois:
 
