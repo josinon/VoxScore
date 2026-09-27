@@ -8,6 +8,5 @@ metadata:
 spec:
   tls:
     - hosts:
-        - megadance.lab6.cloud
-        - api-magadance.lab6.cloud
+        - megavoz.lab6.cloud
       secretName: voxscore-tls

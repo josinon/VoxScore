@@ -13,7 +13,7 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: megadance.lab6.cloud
+    - host: megavoz.lab6.cloud
       http:
         paths:
           - path: /api
@@ -30,7 +30,7 @@ spec:
                 name: voxscore-frontend
                 port:
                   number: 80
-    - host: api-magadance.lab6.cloud
+    - host: api-megavoz.lab6.cloud
       http:
         paths:
           - path: /

@@ -1,6 +1,6 @@
 # VoxScore
 
-Resumo das funcionalidades — **Megadance 2026**.
+Resumo das funcionalidades — **Mega Voz**.
 
 ## 1. Autenticação
 
@@ -19,7 +19,7 @@ Resumo das funcionalidades — **Megadance 2026**.
 
 ### Jurado e público
 
-Avaliação por **4 critérios** (Megadance 2026):
+Avaliação por **4 critérios** (Mega Voz):
 
 - Desenvolvimento do Roteiro
 - Criatividade

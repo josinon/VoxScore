@@ -87,7 +87,7 @@ export function Ranking({
                 <h1 className="text-2xl font-bold">
                   {showScores ? 'Ranking Geral' : 'Avaliações em andamento'}
                 </h1>
-                <p className="text-sm text-white/90">Megadance 2026</p>
+                <p className="text-sm text-white/90">Mega Voz 2026</p>
               </div>
             </div>
             <button

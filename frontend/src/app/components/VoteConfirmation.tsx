@@ -24,7 +24,7 @@ export function VoteConfirmation({ artistName, onClose }: VoteConfirmationProps)
 
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-purple-900">
-            Obrigado por participar do Megadance 2026! Acompanhe os resultados em tempo real.
+            Obrigado por participar do Mega Voz! Acompanhe os resultados em tempo real.
           </p>
         </div>
 

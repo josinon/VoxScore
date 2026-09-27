@@ -51,7 +51,7 @@ export function LoginPage() {
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-full mb-4 backdrop-blur-sm">
               <Music2 className="w-10 h-10 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Megadance 2026</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Mega Voz 2026</h1>
             <p className="text-white/90">Sistema de Votação</p>
           </div>
 
@@ -132,7 +132,7 @@ export function LoginPage() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-white/80 text-sm">Megadance 2026 © Todos os direitos reservados</p>
+          <p className="text-white/80 text-sm">Mega Voz 2026 © Todos os direitos reservados</p>
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ export function VotingHeader({
             <Music2 className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">Megadance 2026</h1>
+            <h1 className="text-xl font-bold">Mega Voz 2026</h1>
             <p
               className="text-sm text-white/90 flex items-center gap-2"
               data-testid="header-mode"
