@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { Shield, Users as UsersIcon, Award, Ban, CheckCircle, Search } from 'lucide-react';
-import type { MeResponse, UserRole } from '../../../lib/api';
+import {
+  Shield,
+  Users as UsersIcon,
+  Award,
+  Ban,
+  CheckCircle,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
+import type { MeResponse, UserRole, UsersListQuery } from '../../../lib/api';
 import { ApiError } from '../../../lib/api';
 import { Button } from '../ui/button';
 import {
@@ -14,11 +23,16 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 
+const PAGE_SIZE = 25;
+
 interface ManageUsersProps {
   users: MeResponse[];
+  total: number;
+  page: number;
+  totalPages: number;
   loading: boolean;
   error: string | null;
-  onRetry: () => void;
+  onLoad: (query: UsersListQuery) => void;
   onPatchUser: (
     id: string,
     body: { role?: UserRole; disabled?: boolean },
@@ -31,9 +45,12 @@ type PendingPatch =
 
 export function ManageUsers({
   users,
+  total,
+  page,
+  totalPages,
   loading,
   error,
-  onRetry,
+  onLoad,
   onPatchUser,
 }: ManageUsersProps) {
   const [filterRole, setFilterRole] = useState<'ALL' | UserRole>('ALL');
@@ -41,8 +58,34 @@ export function ManageUsers({
     'ALL',
   );
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [pending, setPending] = useState<PendingPatch | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => setDebouncedSearch(searchQuery.trim()), 300);
+    return () => window.clearTimeout(id);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    onLoad({
+      page: 1,
+      limit: PAGE_SIZE,
+      q: debouncedSearch || undefined,
+      role: filterRole,
+      disabled: filterDisabled,
+    });
+  }, [debouncedSearch, filterRole, filterDisabled, onLoad]);
+
+  const loadPage = (nextPage: number) => {
+    onLoad({
+      page: nextPage,
+      limit: PAGE_SIZE,
+      q: debouncedSearch || undefined,
+      role: filterRole,
+      disabled: filterDisabled,
+    });
+  };
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -65,20 +108,6 @@ export function ManageUsers({
         return 'bg-blue-100 text-blue-700 border-blue-300';
     }
   };
-
-  const filteredUsers = users.filter((u) => {
-    const matchRole = filterRole === 'ALL' || u.role === filterRole;
-    const matchDis =
-      filterDisabled === 'ALL' ||
-      (filterDisabled === 'active' && !u.disabled) ||
-      (filterDisabled === 'disabled' && u.disabled);
-    const q = searchQuery.toLowerCase();
-    const matchSearch =
-      !q ||
-      u.displayName.toLowerCase().includes(q) ||
-      u.email.toLowerCase().includes(q);
-    return matchRole && matchDis && matchSearch;
-  });
 
   const runPending = async () => {
     if (!pending) {
@@ -122,6 +151,9 @@ export function ManageUsers({
     });
   };
 
+  const from = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(page * PAGE_SIZE, total);
+
   return (
     <div className="space-y-6">
       <AlertDialog open={pending !== null} onOpenChange={(o) => !o && setPending(null)}>
@@ -159,7 +191,11 @@ export function ManageUsers({
 
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Gerenciar Usuários</h2>
-        <p className="text-gray-600">Total: {users.length} usuário(s) — dados do servidor</p>
+        <p className="text-gray-600">
+          {total === 0
+            ? 'Nenhum usuário'
+            : `Mostrando ${from}–${to} de ${total} usuário(s)`}
+        </p>
       </div>
 
       {error ? (
@@ -170,17 +206,11 @@ export function ManageUsers({
           <p className="mb-2">{error}</p>
           <button
             type="button"
-            onClick={onRetry}
+            onClick={() => loadPage(page || 1)}
             className="font-semibold text-red-900 underline"
           >
             Tentar novamente
           </button>
-        </div>
-      ) : null}
-
-      {loading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
-          Carregando usuários…
         </div>
       ) : null}
 
@@ -236,8 +266,14 @@ export function ManageUsers({
         </div>
       </div>
 
+      {loading ? (
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
+          Carregando usuários…
+        </div>
+      ) : null}
+
       <div className="space-y-4">
-        {!loading && filteredUsers.length === 0 ? (
+        {!loading && users.length === 0 ? (
           <div className="bg-white rounded-xl p-12 text-center">
             <p className="text-gray-500 mb-2">Nenhum usuário encontrado.</p>
             {searchQuery ? (
@@ -251,7 +287,7 @@ export function ManageUsers({
             ) : null}
           </div>
         ) : (
-          filteredUsers.map((u) => (
+          users.map((u) => (
             <div
               key={u.id}
               className={`bg-white rounded-xl p-4 shadow-md ${u.disabled ? 'opacity-60' : ''}`}
@@ -355,6 +391,32 @@ export function ManageUsers({
           ))
         )}
       </div>
+
+      {totalPages > 1 ? (
+        <div className="flex items-center justify-between gap-4 bg-white rounded-xl p-4 shadow-md">
+          <button
+            type="button"
+            disabled={loading || page <= 1}
+            onClick={() => loadPage(page - 1)}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Anterior
+          </button>
+          <p className="text-sm text-gray-600 tabular-nums">
+            Página {page} de {totalPages}
+          </p>
+          <button
+            type="button"
+            disabled={loading || page >= totalPages}
+            onClick={() => loadPage(page + 1)}
+            className="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+          >
+            Próxima
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Music, Users, Settings, TrendingUp, LayoutDashboard } from 'lucide-react';
-import type { MeResponse, UserRole } from '../../../lib/api';
+import type { MeResponse, UserRole, UsersListQuery } from '../../../lib/api';
 import { UserMenu } from '../UserMenu';
 import { ManageCandidates } from './ManageCandidates';
 import { ManageUsers } from './ManageUsers';
@@ -25,9 +25,12 @@ interface AdminDashboardProps {
   };
   onLogout: () => void;
   users: MeResponse[];
+  usersTotal: number;
+  usersPage: number;
+  usersTotalPages: number;
   usersLoading: boolean;
   usersError: string | null;
-  onLoadUsers: () => void;
+  onLoadUsers: (query: UsersListQuery) => void;
   onPatchUser: (
     id: string,
     body: { role?: UserRole; disabled?: boolean },
@@ -53,6 +56,9 @@ export function AdminDashboard({
   user,
   onLogout,
   users,
+  usersTotal,
+  usersPage,
+  usersTotalPages,
   usersLoading,
   usersError,
   onLoadUsers,
@@ -62,19 +68,6 @@ export function AdminDashboard({
   onSetResultsPublished,
 }: AdminDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const usersTabLoadedRef = useRef(false);
-
-  useEffect(() => {
-    if (activeTab !== 'users') {
-      usersTabLoadedRef.current = false;
-      return;
-    }
-    if (usersTabLoadedRef.current) {
-      return;
-    }
-    usersTabLoadedRef.current = true;
-    onLoadUsers();
-  }, [activeTab, onLoadUsers]);
 
   const tabs = [
     { id: 'overview' as TabType, label: 'Visão Geral', icon: LayoutDashboard },
@@ -258,9 +251,12 @@ export function AdminDashboard({
         {activeTab === 'users' && (
           <ManageUsers
             users={users}
+            total={usersTotal}
+            page={usersPage}
+            totalPages={usersTotalPages}
             loading={usersLoading}
             error={usersError}
-            onRetry={onLoadUsers}
+            onLoad={onLoadUsers}
             onPatchUser={onPatchUser}
           />
         )}

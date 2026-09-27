@@ -90,14 +90,22 @@ describeOrSkip('Users / auth (e2e) — Fase 2 (T2.2, T2.3)', () => {
       .expect(403);
   });
 
-  it('GET /users como ADMIN → 200 e lista', async () => {
+  it('GET /users como ADMIN → 200 e lista paginada', async () => {
     const res = await request(server)
       .get('/api/v1/users')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
-    const arr = res.body as { email: string }[];
-    expect(Array.isArray(arr)).toBe(true);
-    expect(arr.some((u) => u.email === publicUserEmail)).toBe(true);
+    const body = res.body as {
+      items: { email: string }[];
+      total: number;
+      page: number;
+      limit: number;
+    };
+    expect(Array.isArray(body.items)).toBe(true);
+    expect(body.page).toBe(1);
+    expect(body.limit).toBe(25);
+    expect(body.total).toBeGreaterThanOrEqual(1);
+    expect(body.items.some((u) => u.email === publicUserEmail)).toBe(true);
   });
 
   it('PATCH /users/:id como PUBLIC → 403', async () => {

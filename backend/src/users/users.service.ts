@@ -9,6 +9,8 @@ import { Not, Repository } from 'typeorm';
 import { UserRole } from '../common/user-role.enum';
 import { User } from '../entities/user.entity';
 import { MeResponseDto } from './dto/me-response.dto';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 import { PatchUserDto } from './dto/patch-user.dto';
 
 @Injectable()
@@ -38,11 +40,40 @@ export class UsersService {
     return this.toMeResponse(user);
   }
 
-  async findAllForAdmin(): Promise<MeResponseDto[]> {
-    const rows = await this.users.find({
-      order: { createdAt: 'ASC' },
-    });
-    return rows.map((u) => this.toMeResponse(u));
+  async findAllForAdmin(
+    query: ListUsersQueryDto = {},
+  ): Promise<PaginatedUsersResponseDto> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 25;
+    const skip = (page - 1) * limit;
+
+    const qb = this.users.createQueryBuilder('user');
+
+    if (query.q) {
+      qb.andWhere(
+        '(LOWER(user.email) LIKE :q OR LOWER(user.displayName) LIKE :q)',
+        { q: `%${query.q.toLowerCase()}%` },
+      );
+    }
+    if (query.role) {
+      qb.andWhere('user.role = :role', { role: query.role });
+    }
+    if (query.disabled !== undefined) {
+      qb.andWhere('user.disabled = :disabled', { disabled: query.disabled });
+    }
+
+    qb.orderBy('user.createdAt', 'ASC').addOrderBy('user.id', 'ASC');
+
+    const [rows, total] = await qb.skip(skip).take(limit).getManyAndCount();
+
+    const dto = new PaginatedUsersResponseDto();
+    dto.schemaVersion = 1;
+    dto.items = rows.map((u) => this.toMeResponse(u));
+    dto.total = total;
+    dto.page = page;
+    dto.limit = limit;
+    dto.totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    return dto;
   }
 
   async patchUserAsAdmin(id: string, dto: PatchUserDto): Promise<MeResponseDto> {

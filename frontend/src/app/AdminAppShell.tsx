@@ -15,6 +15,7 @@ import {
   type CreateCandidateBody,
   type MeResponse,
   type UserRole,
+  type UsersListQuery,
 } from '../lib/api';
 import { mapCandidateToArtist } from '../lib/candidate-mapper';
 import { isAdminRealtimeEnabled } from '../lib/env';
@@ -70,8 +71,15 @@ export function AdminAppShell() {
   const [listError, setListError] = useState<string | null>(null);
 
   const [users, setUsers] = useState<MeResponse[]>([]);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersTotalPages, setUsersTotalPages] = useState(0);
   const [usersLoading, setUsersLoading] = useState(false);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [usersQuery, setUsersQuery] = useState<UsersListQuery>({
+    page: 1,
+    limit: 25,
+  });
 
   const [showRanking, setShowRanking] = useState(false);
   const [rankingRows, setRankingRows] = useState<RankingRow[]>([]);
@@ -102,11 +110,22 @@ export function AdminAppShell() {
     }
   }, []);
 
-  const loadUsers = useCallback(async () => {
+  const loadUsers = useCallback(async (query: UsersListQuery = {}) => {
+    const nextQuery: UsersListQuery = {
+      page: query.page ?? 1,
+      limit: query.limit ?? 25,
+      q: query.q,
+      role: query.role,
+      disabled: query.disabled,
+    };
+    setUsersQuery(nextQuery);
     setUsersLoading(true);
     try {
-      const rows = await fetchUsers();
-      setUsers(rows);
+      const res = await fetchUsers(nextQuery);
+      setUsers(res.items);
+      setUsersTotal(res.total);
+      setUsersPage(res.page);
+      setUsersTotalPages(res.totalPages);
       setUsersError(null);
     } catch (e) {
       setUsersError(
@@ -270,7 +289,7 @@ export function AdminAppShell() {
     try {
       await patchUser(id, body);
       toast.success('Usuário atualizado.');
-      await loadUsers();
+      await loadUsers(usersQuery);
     } catch (e) {
       toast.error(
         e instanceof ApiError ? e.message : 'Erro ao atualizar usuário.',
@@ -315,6 +334,9 @@ export function AdminAppShell() {
       user={menuUser}
       onLogout={handleLogout}
       users={users}
+      usersTotal={usersTotal}
+      usersPage={usersPage}
+      usersTotalPages={usersTotalPages}
       usersLoading={usersLoading}
       usersError={usersError}
       onLoadUsers={loadUsers}

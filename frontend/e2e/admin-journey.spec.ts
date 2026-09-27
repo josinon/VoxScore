@@ -206,10 +206,45 @@ async function installAdminApiMocks(page: Page, state: MockState) {
           });
           return;
         }
+        const url = new URL(route.request().url());
+        const page = Math.max(1, Number(url.searchParams.get('page') ?? '1') || 1);
+        const limit = Math.min(
+          100,
+          Math.max(1, Number(url.searchParams.get('limit') ?? '25') || 25),
+        );
+        const q = (url.searchParams.get('q') ?? '').toLowerCase();
+        const role = url.searchParams.get('role');
+        const disabledParam = url.searchParams.get('disabled');
+        let filtered = [...state.users];
+        if (q) {
+          filtered = filtered.filter(
+            (u) =>
+              u.displayName.toLowerCase().includes(q) ||
+              u.email.toLowerCase().includes(q),
+          );
+        }
+        if (role) {
+          filtered = filtered.filter((u) => u.role === role);
+        }
+        if (disabledParam === 'true') {
+          filtered = filtered.filter((u) => u.disabled);
+        } else if (disabledParam === 'false') {
+          filtered = filtered.filter((u) => !u.disabled);
+        }
+        const total = filtered.length;
+        const start = (page - 1) * limit;
+        const items = filtered.slice(start, start + limit);
         await route.fulfill({
           status: 200,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(state.users),
+          body: JSON.stringify({
+            schemaVersion: 1,
+            items,
+            total,
+            page,
+            limit,
+            totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+          }),
         });
         return;
       }

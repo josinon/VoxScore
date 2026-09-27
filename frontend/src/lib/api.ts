@@ -187,12 +187,47 @@ export async function setRankingPublished(
   return JSON.parse(text) as { published: boolean };
 }
 
-export async function fetchUsers(): Promise<MeResponse[]> {
-  const res = await apiFetch('/users');
+export type UsersListQuery = {
+  page?: number;
+  limit?: number;
+  q?: string;
+  role?: UserRole | 'ALL';
+  disabled?: 'ALL' | 'active' | 'disabled';
+};
+
+export type PaginatedUsersResponse = {
+  schemaVersion: 1;
+  items: MeResponse[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+export async function fetchUsers(
+  query: UsersListQuery = {},
+): Promise<PaginatedUsersResponse> {
+  const params = new URLSearchParams();
+  const page = query.page ?? 1;
+  const limit = query.limit ?? 25;
+  params.set('page', String(page));
+  params.set('limit', String(limit));
+  if (query.q?.trim()) {
+    params.set('q', query.q.trim());
+  }
+  if (query.role && query.role !== 'ALL') {
+    params.set('role', query.role);
+  }
+  if (query.disabled === 'active') {
+    params.set('disabled', 'false');
+  } else if (query.disabled === 'disabled') {
+    params.set('disabled', 'true');
+  }
+  const res = await apiFetch(`/users?${params.toString()}`);
   if (!res.ok) {
     throw new ApiError(await safeErrorBody(res), res.status);
   }
-  return (await res.json()) as MeResponse[];
+  return (await res.json()) as PaginatedUsersResponse;
 }
 
 export async function patchUser(

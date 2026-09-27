@@ -1,14 +1,24 @@
-import { Controller, Get, Param, ParseUUIDPipe, Patch, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Patch, Body, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Request } from 'express';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { UserRole } from '../common/user-role.enum';
+import { ListUsersQueryDto } from './dto/list-users-query.dto';
+import { PaginatedUsersResponseDto } from './dto/paginated-users-response.dto';
 import { PatchUserDto } from './dto/patch-user.dto';
 import { UsersService } from './users.service';
 
 export type JwtRequestUser = { userId: string; role: string };
 
+@ApiTags('users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -22,8 +32,15 @@ export class UsersController {
   @Get()
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.ADMIN)
-  async list(): Promise<ReturnType<UsersService['findAllForAdmin']>> {
-    return this.usersService.findAllForAdmin();
+  @ApiOperation({
+    summary: 'Listar utilizadores (ADMIN)',
+    description: 'Resposta paginada; filtros opcionais `q`, `role`, `disabled`.',
+  })
+  @ApiOkResponse({ type: PaginatedUsersResponseDto })
+  async list(
+    @Query() query: ListUsersQueryDto,
+  ): Promise<PaginatedUsersResponseDto> {
+    return this.usersService.findAllForAdmin(query);
   }
 
   @Patch(':id')
