@@ -48,11 +48,26 @@ export class RankingEntryDto {
 
   @ApiProperty({
     description:
-      'Penalidade administrativa subtraída de `computedScore`; null se resultados ocultos.',
+      'Soma das penalidades administrativas; null se resultados ocultos.',
     nullable: true,
     example: 0.5,
   })
   scorePenalty: number | null;
+
+  @ApiProperty({
+    description:
+      'Lista de penalidades com motivo; null se resultados ocultos ou sem penalidades.',
+    nullable: true,
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        amount: { type: 'number' },
+        reason: { type: 'string' },
+      },
+    },
+  })
+  penalties: { amount: number; reason: string }[] | null;
 
   @ApiProperty({
     description:

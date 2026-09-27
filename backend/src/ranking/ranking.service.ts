@@ -101,6 +101,7 @@ export class RankingService {
   ): Promise<{ scores: RankingResponseDto; counts: RankingResponseDto }> {
     const activeCandidates = await this.candidates.find({
       where: { active: true },
+      relations: ['penalties'],
       order: { displayOrder: 'ASC', name: 'ASC', id: 'ASC' },
     });
 
@@ -155,15 +156,32 @@ export class RankingService {
       activeCandidates.map((c) => ({
         id: c.id,
         name: c.name,
-        scorePenalty: Number(c.scorePenalty) || 0,
+        scorePenalty:
+          (c.penalties?.length
+            ? c.penalties.reduce((s, p) => s + (Number(p.amount) || 0), 0)
+            : Number(c.scorePenalty)) || 0,
       })),
       voteInputs,
       votingMode,
       weightsFromPercent(scoreWeights.judgeWeightPercent),
     );
 
+    const penaltiesByCandidate = new Map(
+      activeCandidates.map((c) => [
+        c.id,
+        (c.penalties ?? [])
+          .slice()
+          .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+          .map((p) => ({
+            amount: Number(p.amount) || 0,
+            reason: p.reason,
+          })),
+      ]),
+    );
+
     scores.entries = rows.map((r) => {
       const votesForCandidate = votesByCandidate.get(r.candidateId) ?? [];
+      const penaltyList = penaltiesByCandidate.get(r.candidateId) ?? [];
       const e = new RankingEntryDto();
       e.rank = r.rank;
       e.candidateId = r.candidateId;
@@ -173,6 +191,7 @@ export class RankingService {
       e.publicCompositeAverage = r.publicCompositeAverage;
       e.computedScore = r.computedScore;
       e.scorePenalty = r.scorePenalty;
+      e.penalties = penaltyList.length > 0 ? penaltyList : null;
       e.finalScore = r.finalScore;
       e.judgeCriteriaAverages = r.judgeCriteriaAverages;
       e.publicCriteriaAverages = r.publicCriteriaAverages;
@@ -190,6 +209,7 @@ export class RankingService {
       e.publicCompositeAverage = null;
       e.computedScore = null;
       e.scorePenalty = null;
+      e.penalties = null;
       e.finalScore = null;
       e.judgeCriteriaAverages = null;
       e.publicCriteriaAverages = null;

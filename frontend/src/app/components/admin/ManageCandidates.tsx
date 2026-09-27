@@ -17,6 +17,14 @@ interface ManageCandidatesProps {
   onAddArtist: (artist: Omit<Artist, 'id'>) => void | Promise<void>;
   onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void | Promise<void>;
   onDeleteArtist: (id: string) => void | Promise<void>;
+  onAddPenalty: (
+    candidateId: string,
+    body: { amount: number; reason: string },
+  ) => void | Promise<void>;
+  onRemovePenalty: (
+    candidateId: string,
+    penaltyId: string,
+  ) => void | Promise<void>;
 }
 
 export function ManageCandidates({
@@ -24,11 +32,16 @@ export function ManageCandidates({
   onAddArtist,
   onUpdateArtist,
   onDeleteArtist,
+  onAddPenalty,
+  onRemovePenalty,
 }: ManageCandidatesProps) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [penaltyAmount, setPenaltyAmount] = useState(0.5);
+  const [penaltyReason, setPenaltyReason] = useState('');
+  const [penaltyBusy, setPenaltyBusy] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     song: '',
@@ -38,8 +51,10 @@ export function ManageCandidates({
     instagram: '',
     youtube: '',
     active: true,
-    scorePenalty: 0,
   });
+
+  const editingArtist =
+    editingId !== null ? artists.find((a) => a.id === editingId) : undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +70,8 @@ export function ManageCandidates({
       bio: formData.bio,
       votingOpen: existing?.votingOpen ?? false,
       active: formData.active,
-      scorePenalty: formData.scorePenalty,
+      scorePenalty: existing?.scorePenalty ?? 0,
+      penalties: existing?.penalties ?? [],
       displayOrder: existing?.displayOrder ?? 0,
       socialMedia: {
         instagram: formData.instagram || undefined,
@@ -87,8 +103,9 @@ export function ManageCandidates({
       instagram: artist.socialMedia.instagram || '',
       youtube: artist.socialMedia.youtube || '',
       active: artist.active,
-      scorePenalty: artist.scorePenalty ?? 0,
     });
+    setPenaltyAmount(0.5);
+    setPenaltyReason('');
     setShowForm(true);
   };
 
@@ -115,10 +132,32 @@ export function ManageCandidates({
       instagram: '',
       youtube: '',
       active: true,
-      scorePenalty: 0,
     });
     setEditingId(null);
+    setPenaltyAmount(0.5);
+    setPenaltyReason('');
     setShowForm(false);
+  };
+
+  const handleAddPenalty = async () => {
+    if (!editingId) {
+      return;
+    }
+    const reason = penaltyReason.trim();
+    if (reason.length < 3) {
+      return;
+    }
+    setPenaltyBusy(true);
+    try {
+      await onAddPenalty(editingId, {
+        amount: penaltyAmount,
+        reason,
+      });
+      setPenaltyReason('');
+      setPenaltyAmount(0.5);
+    } finally {
+      setPenaltyBusy(false);
+    }
   };
 
   return (
@@ -281,29 +320,92 @@ export function ManageCandidates({
               Candidato ativo (visível na lista pública de votação)
             </label>
 
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Penalidade no ranking (opcional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                max={10}
-                step={0.5}
-                value={formData.scorePenalty}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    scorePenalty: Number.parseFloat(e.target.value) || 0,
-                  })
-                }
-                className="w-full max-w-xs px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Valor subtraído da nota final (0 a 10, passos de 0,5). Deixe 0 se não houver
-                penalidade.
+            {editingId && editingArtist ? (
+              <div
+                className="rounded-xl border border-red-200 bg-red-50/50 p-4 space-y-3"
+                data-testid="candidate-penalties-panel"
+              >
+                <div>
+                  <h4 className="font-semibold text-gray-900">Penalidades</h4>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Pode adicionar várias; cada uma tem valor e motivo. Soma atual:{' '}
+                    <strong>−{(editingArtist.scorePenalty ?? 0).toFixed(2)}</strong>
+                  </p>
+                </div>
+                {(editingArtist.penalties ?? []).length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhuma penalidade.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {editingArtist.penalties.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-start justify-between gap-3 rounded-lg border border-red-100 bg-white px-3 py-2 text-sm"
+                      >
+                        <div>
+                          <p className="font-semibold text-red-800">
+                            −{p.amount.toFixed(2)}
+                          </p>
+                          <p className="text-gray-700">{p.reason}</p>
+                        </div>
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-red-700 hover:underline shrink-0"
+                          disabled={penaltyBusy}
+                          onClick={() =>
+                            void onRemovePenalty(editingId, p.id)
+                          }
+                        >
+                          Remover
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="grid sm:grid-cols-[7rem_1fr_auto] gap-2 items-end">
+                  <label className="block text-sm">
+                    <span className="font-medium text-gray-700">Valor</span>
+                    <input
+                      type="number"
+                      min={0.5}
+                      max={10}
+                      step={0.5}
+                      value={penaltyAmount}
+                      onChange={(e) =>
+                        setPenaltyAmount(Number.parseFloat(e.target.value) || 0.5)
+                      }
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="font-medium text-gray-700">Motivo</span>
+                    <input
+                      type="text"
+                      value={penaltyReason}
+                      onChange={(e) => setPenaltyReason(e.target.value)}
+                      placeholder="Ex.: atraso na apresentação"
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                      data-testid="penalty-reason-input"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    data-testid="penalty-add-btn"
+                    disabled={
+                      penaltyBusy || penaltyReason.trim().length < 3
+                    }
+                    onClick={() => void handleAddPenalty()}
+                    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    Adicionar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-500">
+                Depois de criar o candidato, edite-o para adicionar penalidades com
+                motivo.
               </p>
-            </div>
+            )}
 
             <div className="flex gap-3 pt-4">
               <button
@@ -375,7 +477,9 @@ export function ManageCandidates({
                     )}
                     {(artist.scorePenalty ?? 0) > 0 ? (
                       <span className="text-xs font-semibold bg-red-100 text-red-800 px-2 py-0.5 rounded">
-                        Penalidade −{(artist.scorePenalty ?? 0).toFixed(1)}
+                        {(artist.penalties?.length ?? 0) > 1
+                          ? `${artist.penalties.length} penalidades −${artist.scorePenalty.toFixed(2)}`
+                          : `Penalidade −${artist.scorePenalty.toFixed(2)}`}
                       </span>
                     ) : null}
                   </div>

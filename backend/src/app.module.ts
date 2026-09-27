@@ -9,7 +9,9 @@ import { RestoreVotesUserCandidateUnique1737100000000 } from './database/migrati
 import { CandidateScorePenalty1737200000000 } from './database/migrations/1737200000000-CandidateScorePenalty';
 import { EventSettingsVotingMode1737300000000 } from './database/migrations/1737300000000-EventSettingsVotingMode';
 import { EventSettingsJudgeWeight1737400000000 } from './database/migrations/1737400000000-EventSettingsJudgeWeight';
+import { CandidatePenalties1737500000000 } from './database/migrations/1737500000000-CandidatePenalties';
 import { Candidate } from './entities/candidate.entity';
+import { CandidatePenalty } from './entities/candidate-penalty.entity';
 import { EventSettings } from './entities/event-settings.entity';
 import { User } from './entities/user.entity';
 import { Vote } from './entities/vote.entity';
@@ -51,7 +53,7 @@ import {
                   'false',
               }
             : false,
-          entities: [User, Candidate, Vote, EventSettings],
+          entities: [User, Candidate, CandidatePenalty, Vote, EventSettings],
           migrations: [
             InitialSchema1736820000000,
             EventSettings1736900000000,
@@ -59,6 +61,7 @@ import {
             CandidateScorePenalty1737200000000,
             EventSettingsVotingMode1737300000000,
             EventSettingsJudgeWeight1737400000000,
+            CandidatePenalties1737500000000,
           ],
           migrationsTableName: 'typeorm_migrations',
           /** Predefinição: aplica migrações pendentes ao arrancar. Em K8s com várias réplicas use `TYPEORM_MIGRATIONS_RUN=false` e um Job. */

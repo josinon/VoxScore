@@ -90,6 +90,13 @@ export async function postOAuthMock(body: {
   return (await res.json()) as { accessToken: string };
 }
 
+export type CandidatePenaltyDto = {
+  id: string;
+  amount: number;
+  reason: string;
+  createdAt: string;
+};
+
 export type CandidateDto = {
   id: string;
   name: string;
@@ -103,6 +110,7 @@ export type CandidateDto = {
   displayOrder: number;
   active: boolean;
   scorePenalty: number;
+  penalties: CandidatePenaltyDto[];
   createdAt: string;
   updatedAt: string;
 };
@@ -118,6 +126,7 @@ export type RankingEntryDto = {
   publicCompositeAverage: number | null;
   computedScore: number | null;
   scorePenalty: number | null;
+  penalties: { amount: number; reason: string }[] | null;
   finalScore: number | null;
   judgeCriteriaAverages: Record<string, number> | null;
   publicCriteriaAverages: Record<string, number> | null;
@@ -317,6 +326,39 @@ export async function updateCandidate(
     method: 'PATCH',
     body: JSON.stringify(body),
   });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as CandidateDto;
+}
+
+export async function addCandidatePenalty(
+  candidateId: string,
+  body: { amount: number; reason: string },
+): Promise<CandidateDto> {
+  const res = await apiFetch(
+    `/candidates/${encodeURIComponent(candidateId)}/penalties`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    throw new ApiError(formatNestErrorMessage(text, res.status), res.status);
+  }
+  return JSON.parse(text) as CandidateDto;
+}
+
+export async function removeCandidatePenalty(
+  candidateId: string,
+  penaltyId: string,
+): Promise<CandidateDto> {
+  const res = await apiFetch(
+    `/candidates/${encodeURIComponent(candidateId)}/penalties/${encodeURIComponent(penaltyId)}`,
+    { method: 'DELETE' },
+  );
   const text = await res.text();
   if (!res.ok) {
     throw new ApiError(formatNestErrorMessage(text, res.status), res.status);

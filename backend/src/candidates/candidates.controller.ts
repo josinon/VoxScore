@@ -30,6 +30,7 @@ import { UserRole } from '../common/user-role.enum';
 import { CandidatesService } from './candidates.service';
 import { CandidateResponseDto } from './dto/candidate-response.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
+import { CreateCandidatePenaltyDto } from './dto/create-candidate-penalty.dto';
 import { UpdateCandidateDto } from './dto/update-candidate.dto';
 
 type JwtUser = { userId: string; role: string };
@@ -77,6 +78,34 @@ export class CandidatesController {
   @ApiForbiddenResponse()
   async create(@Body() dto: CreateCandidateDto): Promise<CandidateResponseDto> {
     return this.candidatesService.create(dto);
+  }
+
+  @Post(':id/penalties')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Adicionar penalidade a um candidato (ADMIN)' })
+  @ApiOkResponse({ type: CandidateResponseDto })
+  @ApiNotFoundResponse()
+  @ApiForbiddenResponse()
+  async addPenalty(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateCandidatePenaltyDto,
+  ): Promise<CandidateResponseDto> {
+    return this.candidatesService.addPenalty(id, dto);
+  }
+
+  @Delete(':id/penalties/:penaltyId')
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiOperation({ summary: 'Remover penalidade de um candidato (ADMIN)' })
+  @ApiOkResponse({ type: CandidateResponseDto })
+  @ApiNotFoundResponse()
+  @ApiForbiddenResponse()
+  async removePenalty(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('penaltyId', ParseUUIDPipe) penaltyId: string,
+  ): Promise<CandidateResponseDto> {
+    return this.candidatesService.removePenalty(id, penaltyId);
   }
 
   @Patch(':id')

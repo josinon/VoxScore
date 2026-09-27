@@ -5,6 +5,8 @@ import {
   ApiError,
   createCandidate,
   deleteCandidate,
+  addCandidatePenalty,
+  removeCandidatePenalty,
   fetchCandidates,
   fetchRanking,
   fetchUsers,
@@ -46,7 +48,6 @@ function artistToCreateBody(a: Omit<Artist, 'id'>): CreateCandidateBody {
     votingOpen: a.votingOpen,
     active: a.active,
     displayOrder: a.displayOrder ?? 0,
-    scorePenalty: a.scorePenalty ?? 0,
   };
 }
 
@@ -62,7 +63,6 @@ function artistToUpdateBody(a: Omit<Artist, 'id'>): Partial<CreateCandidateBody>
     votingOpen: a.votingOpen,
     active: a.active,
     displayOrder: a.displayOrder ?? 0,
-    scorePenalty: a.scorePenalty ?? 0,
   };
 }
 
@@ -334,6 +334,44 @@ export function AdminAppShell() {
     }
   };
 
+  const handleAddPenalty = async (
+    candidateId: string,
+    body: { amount: number; reason: string },
+  ) => {
+    try {
+      await addCandidatePenalty(candidateId, body);
+      toast.success('Penalidade adicionada.');
+      await loadCandidates();
+      if (showRanking) {
+        await loadRanking();
+      }
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError ? e.message : 'Erro ao adicionar penalidade.',
+      );
+      throw e;
+    }
+  };
+
+  const handleRemovePenalty = async (
+    candidateId: string,
+    penaltyId: string,
+  ) => {
+    try {
+      await removeCandidatePenalty(candidateId, penaltyId);
+      toast.success('Penalidade removida.');
+      await loadCandidates();
+      if (showRanking) {
+        await loadRanking();
+      }
+    } catch (e) {
+      toast.error(
+        e instanceof ApiError ? e.message : 'Erro ao remover penalidade.',
+      );
+      throw e;
+    }
+  };
+
   const handlePatchUser = async (
     id: string,
     body: { role?: UserRole; disabled?: boolean },
@@ -391,6 +429,8 @@ export function AdminAppShell() {
       onAddArtist={handleAddArtist}
       onUpdateArtist={handleUpdateArtist}
       onDeleteArtist={handleDeleteArtist}
+      onAddPenalty={handleAddPenalty}
+      onRemovePenalty={handleRemovePenalty}
       onShowRanking={() => setShowRanking(true)}
       user={menuUser}
       onLogout={handleLogout}

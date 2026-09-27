@@ -22,6 +22,14 @@ interface AdminDashboardProps {
   onAddArtist: (artist: Omit<Artist, 'id'>) => void | Promise<void>;
   onUpdateArtist: (id: string, artist: Omit<Artist, 'id'>) => void | Promise<void>;
   onDeleteArtist: (id: string) => void | Promise<void>;
+  onAddPenalty: (
+    candidateId: string,
+    body: { amount: number; reason: string },
+  ) => void | Promise<void>;
+  onRemovePenalty: (
+    candidateId: string,
+    penaltyId: string,
+  ) => void | Promise<void>;
   onShowRanking: () => void;
   user: {
     name: string;
@@ -63,6 +71,8 @@ export function AdminDashboard({
   onAddArtist,
   onUpdateArtist,
   onDeleteArtist,
+  onAddPenalty,
+  onRemovePenalty,
   onShowRanking,
   user,
   onLogout,
@@ -260,6 +270,8 @@ export function AdminDashboard({
                 onAddArtist={onAddArtist}
                 onUpdateArtist={onUpdateArtist}
                 onDeleteArtist={onDeleteArtist}
+                onAddPenalty={onAddPenalty}
+                onRemovePenalty={onRemovePenalty}
               />
             )}
           </div>

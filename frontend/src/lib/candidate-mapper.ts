@@ -12,6 +12,11 @@ export function mapCandidateToArtist(c: CandidateDto): Artist {
     votingOpen: c.votingOpen,
     active: c.active,
     scorePenalty: c.scorePenalty ?? 0,
+    penalties: (c.penalties ?? []).map((p) => ({
+      id: p.id,
+      amount: p.amount,
+      reason: p.reason,
+    })),
     displayOrder: c.displayOrder,
     socialMedia: {
       instagram: c.instagramUrl ?? undefined,

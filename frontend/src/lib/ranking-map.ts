@@ -27,6 +27,7 @@ export function mapRankingEntriesToRows(
       publicScore: e.publicCompositeAverage ?? 0,
       computedScore: e.computedScore ?? 0,
       scorePenalty: e.scorePenalty ?? 0,
+      penalties: e.penalties ?? [],
       totalScore: e.finalScore ?? 0,
       showScores,
     };

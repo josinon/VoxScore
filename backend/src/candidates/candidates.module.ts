@@ -5,13 +5,14 @@ import { RankingModule } from '../ranking/ranking.module';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { VotingSupportModule } from '../voting/voting-support.module';
 import { Candidate } from '../entities/candidate.entity';
+import { CandidatePenalty } from '../entities/candidate-penalty.entity';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CandidatesController } from './candidates.controller';
 import { CandidatesService } from './candidates.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Candidate]),
+    TypeOrmModule.forFeature([Candidate, CandidatePenalty]),
     AuthModule,
     RankingModule,
     RealtimeModule,

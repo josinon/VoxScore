@@ -1,4 +1,5 @@
 import { Trophy, Medal, Award, TrendingUp, Users, Eye, MinusCircle } from 'lucide-react';
+import { Fragment } from 'react';
 import type { VotingMode } from '../../lib/api';
 import type { RankingRow } from '../types';
 
@@ -395,10 +396,24 @@ export function Ranking({
                           <dd className="text-right font-semibold text-gray-900">
                             {artist.computedScore.toFixed(2)}
                           </dd>
-                          <dt className="text-gray-700">Penalidade</dt>
-                          <dd className="text-right font-semibold text-red-700">
-                            −{artist.scorePenalty.toFixed(2)}
-                          </dd>
+                          {(artist.penalties ?? []).map((p, i) => (
+                            <Fragment key={`${p.reason}-${i}`}>
+                              <dt className="text-gray-700">
+                                Penalidade: {p.reason}
+                              </dt>
+                              <dd className="text-right font-semibold text-red-700">
+                                −{p.amount.toFixed(2)}
+                              </dd>
+                            </Fragment>
+                          ))}
+                          {(artist.penalties ?? []).length === 0 ? (
+                            <>
+                              <dt className="text-gray-700">Penalidade</dt>
+                              <dd className="text-right font-semibold text-red-700">
+                                −{artist.scorePenalty.toFixed(2)}
+                              </dd>
+                            </>
+                          ) : null}
                           <dt className="text-gray-900 font-semibold border-t border-red-200 pt-2 mt-1">
                             Nota final
                           </dt>

@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CandidatePenalty } from './candidate-penalty.entity';
 import { Vote } from './vote.entity';
 
 @Entity('candidates')
@@ -43,7 +44,7 @@ export class Candidate {
   @Column({ type: 'boolean', default: true })
   active: boolean;
 
-  /** Desconto aplicado à nota final do ranking (passos de 0,5; 0 = sem penalidade). */
+  /** Soma das penalidades individuais (`candidate_penalties`); sincronizado ao alterar a lista. */
   @Column({ type: 'double precision', default: 0 })
   scorePenalty: number;
 
@@ -55,4 +56,7 @@ export class Candidate {
 
   @OneToMany(() => Vote, (vote) => vote.candidate)
   votes: Vote[];
+
+  @OneToMany(() => CandidatePenalty, (p) => p.candidate)
+  penalties: CandidatePenalty[];
 }

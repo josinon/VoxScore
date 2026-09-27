@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CandidatePenaltyDto } from './candidate-penalty.dto';
 
 export class CandidateResponseDto {
   @ApiProperty()
@@ -37,9 +38,12 @@ export class CandidateResponseDto {
   @ApiProperty({
     example: 0,
     description:
-      'Penalidade subtraída da nota final no ranking (0–10, passos de 0,5).',
+      'Soma das penalidades individuais subtraída da nota final no ranking.',
   })
   scorePenalty!: number;
+
+  @ApiProperty({ type: [CandidatePenaltyDto] })
+  penalties!: CandidatePenaltyDto[];
 
   @ApiProperty()
   createdAt!: Date;
