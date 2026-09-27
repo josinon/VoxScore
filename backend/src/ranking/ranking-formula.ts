@@ -66,6 +66,9 @@ export interface RankingLeaderboardRow {
 }
 
 export function roundScore4(n: number): number {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
   return Math.round(n * 10000) / 10000;
 }
 
@@ -76,8 +79,13 @@ function arithmeticMean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-function compositeForVote(scores: Record<string, number>): number {
-  const vals = VOTE_CRITERIA.map((k) => scores[k]);
+function compositeForVote(scores: Record<string, number>): number | null {
+  const vals = VOTE_CRITERIA.map((k) => scores[k]).filter(
+    (n): n is number => typeof n === 'number' && Number.isFinite(n),
+  );
+  if (vals.length === 0) {
+    return null;
+  }
   return arithmeticMean(vals);
 }
 
@@ -87,7 +95,14 @@ function criterionAverages(
 ): Record<string, number> {
   const out: Record<string, number> = {};
   for (const k of keys) {
-    const vals = votes.map((v) => v.criteriaScores[k]);
+    const vals = votes
+      .map((v) => v.criteriaScores[k])
+      .filter(
+        (n): n is number => typeof n === 'number' && Number.isFinite(n),
+      );
+    if (vals.length === 0) {
+      continue;
+    }
     out[k] = roundScore4(arithmeticMean(vals));
   }
   return out;
@@ -125,12 +140,12 @@ function aggregateCandidate(
     ? relevant.filter((v) => v.userRole === UserRole.PUBLIC)
     : [];
 
-  const judgeComposites = judgeVotes.map((v) =>
-    compositeForVote(v.criteriaScores),
-  );
-  const publicComposites = publicVotes.map((v) =>
-    compositeForVote(v.criteriaScores),
-  );
+  const judgeComposites = judgeVotes
+    .map((v) => compositeForVote(v.criteriaScores))
+    .filter((n): n is number => n != null);
+  const publicComposites = publicVotes
+    .map((v) => compositeForVote(v.criteriaScores))
+    .filter((n): n is number => n != null);
 
   const judgeCompositeAverage =
     judgeComposites.length > 0
@@ -171,11 +186,11 @@ function aggregateCandidate(
     scorePenalty,
     finalScore,
     judgeCriteriaAverages:
-      judgeVotes.length > 0
+      judgeComposites.length > 0
         ? criterionAverages(judgeVotes, VOTE_CRITERIA)
         : null,
     publicCriteriaAverages:
-      publicVotes.length > 0
+      publicComposites.length > 0
         ? criterionAverages(publicVotes, VOTE_CRITERIA)
         : null,
   };

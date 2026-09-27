@@ -43,22 +43,37 @@ export function Ranking({
   const getRankIcon = (rank: number) => {
     if (!showScores || rank < 1) {
       return (
-        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-          <Users className="w-4 h-4 text-purple-600" />
+        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+          <Users className="w-5 h-5 text-purple-600" />
         </div>
       );
     }
     switch (rank) {
       case 1:
-        return <Trophy className="w-8 h-8 text-yellow-500" />;
+        return (
+          <div className="flex flex-col items-center gap-0.5 min-w-[2.5rem]">
+            <Trophy className="w-8 h-8 text-yellow-500" aria-hidden />
+            <span className="text-xs font-bold text-yellow-700">1º</span>
+          </div>
+        );
       case 2:
-        return <Medal className="w-8 h-8 text-gray-400" />;
+        return (
+          <div className="flex flex-col items-center gap-0.5 min-w-[2.5rem]">
+            <Medal className="w-8 h-8 text-slate-500" aria-hidden />
+            <span className="text-xs font-bold text-slate-600">2º</span>
+          </div>
+        );
       case 3:
-        return <Award className="w-8 h-8 text-amber-600" />;
+        return (
+          <div className="flex flex-col items-center gap-0.5 min-w-[2.5rem]">
+            <Award className="w-8 h-8 text-amber-700" aria-hidden />
+            <span className="text-xs font-bold text-amber-800">3º</span>
+          </div>
+        );
       default:
         return (
-          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
-            {rank}
+          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-700 tabular-nums">
+            {rank}º
           </div>
         );
     }
@@ -276,6 +291,21 @@ export function Ranking({
                   />
 
                   <div className="flex-1 min-w-0">
+                    {showScores && artist.rank >= 1 ? (
+                      <p
+                        className={`text-xs font-bold uppercase tracking-wide mb-0.5 ${
+                          artist.rank === 1
+                            ? 'text-yellow-700'
+                            : artist.rank === 2
+                              ? 'text-slate-600'
+                              : artist.rank === 3
+                                ? 'text-amber-800'
+                                : 'text-gray-500'
+                        }`}
+                      >
+                        {artist.rank}º lugar
+                      </p>
+                    ) : null}
                     <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">
                       {artist.name}
                     </h3>
@@ -287,21 +317,21 @@ export function Ranking({
                       artist.scorePenalty > 0 ? (
                         <div className="space-y-1" data-testid={`ranking-scores-${artist.artistId}`}>
                           <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent tabular-nums">
-                            {artist.totalScore.toFixed(1)}
+                            {artist.totalScore.toFixed(2)}
                           </div>
                           <p className="text-xs font-semibold text-gray-700">nota final</p>
                           <p className="text-xs text-gray-500 tabular-nums">
-                            obtida {artist.computedScore.toFixed(1)}
+                            obtida {artist.computedScore.toFixed(2)}
                             <span className="text-red-600">
                               {' '}
-                              − {artist.scorePenalty.toFixed(1)}
+                              − {artist.scorePenalty.toFixed(2)}
                             </span>
                           </p>
                         </div>
                       ) : (
                         <>
-                          <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                            {artist.totalScore.toFixed(1)}
+                          <div className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent tabular-nums">
+                            {artist.totalScore.toFixed(2)}
                           </div>
                           <p className="text-xs text-gray-500">pontos</p>
                         </>
@@ -335,8 +365,8 @@ export function Ranking({
                               Jurados
                             </span>
                           </div>
-                          <span className="text-xl font-bold text-gray-900">
-                            {artist.judgeScore.toFixed(1)}
+                          <span className="text-xl font-bold text-gray-900 tabular-nums">
+                            {artist.judgeScore.toFixed(2)}
                           </span>
                         </div>
 
@@ -347,8 +377,8 @@ export function Ranking({
                               Público
                             </span>
                           </div>
-                          <span className="text-xl font-bold text-gray-900">
-                            {artist.publicScore.toFixed(1)}
+                          <span className="text-xl font-bold text-gray-900 tabular-nums">
+                            {artist.publicScore.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -363,17 +393,17 @@ export function Ranking({
                         <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 tabular-nums">
                           <dt className="text-gray-700">Nota obtida (votos)</dt>
                           <dd className="text-right font-semibold text-gray-900">
-                            {artist.computedScore.toFixed(1)}
+                            {artist.computedScore.toFixed(2)}
                           </dd>
                           <dt className="text-gray-700">Penalidade</dt>
                           <dd className="text-right font-semibold text-red-700">
-                            −{artist.scorePenalty.toFixed(1)}
+                            −{artist.scorePenalty.toFixed(2)}
                           </dd>
                           <dt className="text-gray-900 font-semibold border-t border-red-200 pt-2 mt-1">
                             Nota final
                           </dt>
                           <dd className="text-right font-bold text-gray-900 border-t border-red-200 pt-2 mt-1">
-                            {artist.totalScore.toFixed(1)}
+                            {artist.totalScore.toFixed(2)}
                           </dd>
                         </dl>
                       </div>

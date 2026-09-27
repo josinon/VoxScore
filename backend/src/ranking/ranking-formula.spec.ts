@@ -165,6 +165,29 @@ describe('ranking-formula (Fase 6)', () => {
       );
       expect(row.finalScore).toBe(roundScore4(0.7 * 10 + 0.3 * 4));
     });
+
+    it('ignora votos com critérios obsoletos (evita NaN → null no JSON)', () => {
+      const c = { id: 'c-legacy', name: 'Legacy' };
+      const votes = [
+        {
+          candidateId: c.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: {
+            entertainment: 8,
+            emotion: 7,
+          } as unknown as Record<string, number>,
+        },
+        {
+          candidateId: c.id,
+          userRole: UserRole.PUBLIC,
+          criteriaScores: allCriteria(6),
+        },
+      ];
+      const [row] = buildLeaderboard([c], votes, VotingMode.PUBLIC_ONLY);
+      expect(row.publicCompositeAverage).toBe(6);
+      expect(row.finalScore).toBe(6);
+      expect(Number.isFinite(row.finalScore)).toBe(true);
+    });
   });
 
   describe('penalidade administrativa', () => {

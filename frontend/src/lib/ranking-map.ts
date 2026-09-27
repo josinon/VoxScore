@@ -14,7 +14,8 @@ export function mapRankingEntriesToRows(
   const exposeScores = resultsPublished || viewerIsAdmin;
   return entries.map((e) => {
     const c = byId.get(e.candidateId);
-    const showScores = exposeScores && e.finalScore != null;
+    const hasFinalScore = typeof e.finalScore === 'number' && Number.isFinite(e.finalScore);
+    const showScores = exposeScores && hasFinalScore;
     return {
       rank: showScores ? e.rank : 0,
       artistId: e.candidateId,
